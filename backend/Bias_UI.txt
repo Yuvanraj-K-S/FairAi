@@ -1,0 +1,352 @@
+📘 Documentation: Web UI & API for Face Recognition Bias Evaluation
+🎯 Goal
+
+Provide an easy-to-use web interface for uploading face recognition models, running bias evaluation, and visualizing results (charts + JSON reports). The backend will be powered by the face_bias_evaluator.py script.
+
+1. UI Layout & Design
+🔹 Home Page
+
+Header: App name (BiasEval AI) and tagline (“Evaluate fairness of your face recognition models”).
+
+Sections:
+
+Upload Form:
+
+Upload Model File (.onnx, .pt, .h5)
+
+Upload Optional Config File (config.json)
+
+Upload Dataset ZIP (folder structured as dataset/group/identity/images)
+
+Input Similarity Threshold (default: 0.5, slider or number field)
+
+Button: Run Evaluation
+
+Instructions Panel:
+
+Show dataset folder structure requirement
+
+Example command if running locally
+
+🔹 Results Dashboard
+
+After evaluation:
+
+Metrics Summary (cards):
+
+✅ Overall Accuracy
+
+🚫 False Match Rate (FMR)
+
+🚫 False Non-Match Rate (FNMR)
+
+⚖️ Demographic Parity Difference
+
+⚖️ Equalized Odds Difference
+
+Charts:
+
+Bar chart: FMR by Region
+
+Bar chart: FNMR by Region
+
+JSON Report Download:
+
+Button: Download Full Report (bias_evaluation_report.json)
+
+Warnings/Notes:
+
+E.g., “Config file not provided – using defaults.”
+
+2. API Specification
+
+Base URL: http://<server>:8000/api
+
+1. Upload & Run Evaluation
+
+POST /evaluate
+
+Request (multipart/form-data):
+
+Content-Type: multipart/form-data
+
+model_file: (required) model.onnx / model.pt / model.h5
+config_file: (optional) config.json
+dataset_zip: (optional) dataset.zip (unzipped into dataset/)
+threshold: (optional) float (default=0.5)
+
+
+Response (JSON):
+
+{
+  "status": "success",
+  "message": "Evaluation completed",
+  "report_path": "results/bias_evaluation_report.json",
+  "charts": {
+    "fmr": "results/fmr_by_region.png",
+    "fnmr": "results/fnmr_by_region.png"
+  },
+  "summary": {
+    "FMR": 0.12,
+    "FNMR": 0.08,
+    "accuracy": 0.89,
+    "dp_difference": 0.05,
+    "eo_difference": 0.04
+  }
+}
+
+2. Get Report
+
+GET /report/{id}
+
+Returns the JSON bias evaluation report.
+
+Response:
+
+{
+  "timestamp": "2025-09-03T15:30:21",
+  "overall": { "FMR": 0.12, "FNMR": 0.08, "accuracy": 0.89 },
+  "by_region": {
+    "north": {"FMR": 0.10, "FNMR": 0.07},
+    "south": {"FMR": 0.13, "FNMR": 0.09}
+  },
+  "fairness": {"dp_difference": 0.05, "eo_difference": 0.04},
+  "warnings": ["No config file provided – using defaults."]
+}
+
+3. Download Visualization
+
+GET /results/{chart_name}.png
+
+Returns PNG chart files for embedding in frontend.
+Example: /results/fmr_by_region.png
+
+3. Backend Integration
+
+The backend (face_bias_evaluator.py) will be wrapped with FastAPI (recommended for async & file uploads).
+
+Example endpoint:
+
+@app.post("/evaluate")
+async def evaluate(model_file: UploadFile, config_file: Optional[UploadFile] = None, dataset_zip: Optional[UploadFile] = None, threshold: float = 0.5):
+    # Save uploaded files
+    # Unzip dataset if provided
+    # Run FaceBiasEvaluator(...)
+    # Return JSON summary + paths to results
+
+4. Deployment Notes
+
+Frontend: React + Tailwind (cards for metrics, charts via recharts or API images).
+
+Backend: FastAPI + Uvicorn.
+
+Storage: Save results under results/<session_id>/.
+
+Security: Validate file uploads (model only .onnx, .pt, .h5; config only .json).
+
+✅ With this setup:
+
+User uploads model/config/dataset from the UI.
+
+Backend runs face_bias_evaluator.py.
+
+UI shows metrics + charts with option to download full JSON report.
+
+
+📘 Documentation – Loan Approval Fairness Evaluation Platform
+1. 🎨 UI Design (Frontend)
+
+The UI should be simple and intuitive — users upload their model, dataset, and configuration, then view results.
+
+A. Main Dashboard
+
+Title/Header: “Loan Approval Fairness Evaluator”
+
+Steps (progress wizard layout):
+
+Upload Model
+
+File upload widget (accepts .pkl, .joblib, .onnx, .pt, .pth, .h5)
+
+Validation: only one file at a time, <100MB
+
+Upload Dataset
+
+File upload widget (accepts .csv)
+
+Preview: first 5 rows of uploaded dataset
+
+Configuration Parameters
+
+JSON editor or form with fields:
+
+features (multi-select from CSV columns)
+
+label (dropdown from CSV columns)
+
+sensitive_attribute (dropdown from CSV columns)
+
+positive_label (default 1)
+
+id_column (optional dropdown)
+
+threshold (slider 0–1, default 0.5)
+
+Run Evaluation
+
+Button: “Evaluate Fairness”
+
+Shows spinner/progress while running
+
+Results
+
+Status banner: ✅ PASS / ⚠️ FAIL
+
+Overall metrics: Approval rate, Accuracy
+
+Group metrics table:
+
+Group | Count | Approval Rate | TPR | FPR | Precision | F1 | AUC
+
+Fairness metrics summary:
+
+Demographic Parity Difference
+
+Equal Opportunity Difference
+
+Equalized Odds Difference
+
+Disparate Impact
+
+Flags (if issues found):
+
+Example: ⚠️ “Disparate impact ratio = 0.67 < 0.8”
+
+Visualizations:
+
+Bar chart: Approval rate by group
+
+ROC curves by group
+
+Performance metrics bar chart
+
+Download Report button:
+
+Downloads ZIP containing: summary.json, group_metrics.csv, predictions.csv, recommendations.txt, plots/
+
+2. 🌐 API Endpoints
+1. Health Check
+GET /health
+
+
+Response:
+
+{ "status": "healthy" }
+
+2. Loan Model Fairness Evaluation
+POST /api/loan/evaluate
+Content-Type: multipart/form-data
+
+
+Body Parameters:
+
+model_file: (file) model file
+
+test_csv: (file) dataset CSV
+
+params_json: (string) JSON with parameters
+
+Example params_json:
+
+{
+  "features": ["income", "credit_score", "debt_ratio"],
+  "label": "approved",
+  "sensitive_attribute": "gender",
+  "positive_label": 1,
+  "id_column": "applicant_id"
+}
+
+
+Optional query parameter:
+
+threshold → default 0.5
+
+Response (success = ZIP download):
+
+The server streams back a ZIP file (binary) that includes:
+
+summary.json → overall & group metrics, fairness metrics, flags
+
+group_metrics.csv
+
+predictions_with_group.csv
+
+recommendations.txt
+
+plots/ (charts in PNG)
+
+Frontend should trigger a file download with filename fairness_results.zip.
+
+Response (error):
+
+{
+  "status": "error",
+  "error": "Failed to load model: unsupported file format",
+  "output_directory": "fairness_results"
+}
+
+3. 🖼️ UX Flow
+
+Upload section
+
+Drag & drop zones for Model file and CSV file.
+
+Show file name & size after selection.
+
+Config section
+
+After CSV upload, backend/JS parses header to populate dropdowns for:
+
+Label column
+
+Sensitive attribute
+
+Feature columns (multi-select checkboxes)
+
+Run section
+
+Show a summary of user selections.
+
+“Run Evaluation” button calls POST /api/loan/evaluate.
+
+Results section
+
+Fetches ZIP result.
+
+Parses summary.json and renders:
+
+PASS/FAIL banner
+
+Metrics tables
+
+Flags list
+
+Recommendations (from recommendations.txt)
+
+Charts (directly display PNGs from ZIP, or pre-load into dashboard)
+
+Provide “Download full report” button to save ZIP.
+
+4. 🔑 Important Notes
+
+Security: Never run raw .pkl unless in dev mode. Prefer .onnx or PyTorch torch.jit models.
+
+Performance: Large datasets (>50k rows) may slow evaluation. Consider sampling or batching.
+
+Extensibility: Later you can add support for:
+
+Multi-sensitive attributes (e.g., gender + race)
+
+More fairness metrics (Theil index, calibration)
+
+Bias mitigation actions (reweighting, threshold tuning)
