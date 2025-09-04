@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { FiUpload, FiCheckCircle, FiCamera } from 'react-icons/fi';
+import { FiCheckCircle, FiCamera } from 'react-icons/fi';
 
 function LoanFormPage() {
   const [selectedApplication, setSelectedApplication] = useState(null);

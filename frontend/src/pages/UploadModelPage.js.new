@@ -1,22 +1,5 @@
-/**
- * UploadModelPage Component
- * 
- * This component provides an interface for uploading and managing AI models.
- * It includes a tabbed interface with two main sections:
- * 1. Upload Model: For uploading new AI models with metadata
- * 2. My Models: For viewing and managing previously uploaded models
- * 
- * Features:
- * - Drag and drop file upload
- * - Upload progress tracking
- * - Model metadata collection
- * - Responsive design
- * - Animated UI transitions
- * - Toast notifications
- */
-
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import MainLayout from '../components/layout/MainLayout';
 import UploadModelForm from '../components/upload/UploadModelForm';
 import { FaUpload, FaRobot, FaHistory } from 'react-icons/fa';
@@ -33,10 +16,6 @@ const UploadModelPage = () => {
   const [uploadedModels, setUploadedModels] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  /**
-   * Handles the model upload process
-   * @param {Event} e - Form submit event
-   */
   const handleUpload = (e) => {
     e.preventDefault();
     if (!modelFile) {
@@ -72,32 +51,25 @@ const UploadModelPage = () => {
             status: 'active'
           };
           
-          setUploadedModels(prev => [newModel, ...prev]);
-          setLogs(prev => [...prev, 'Upload completed successfully!']);
-          setIsUploading(false);
+          setUploadedModels(prev => [...prev, newModel]);
           setModelFile(null);
+          setIsUploading(false);
           setUploadProgress(0);
-          
-          // Show success toast
+          setLogs(prev => [...prev, 'Upload completed successfully!']);
           toast.success('Model uploaded successfully!');
         }, 500);
       }
     }, 100);
   };
 
-  // Animation variants for the page container
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        when: 'beforeChildren',
-        staggerChildren: 0.1,
-      },
-    },
+      transition: { duration: 0.5 }
+    }
   };
 
-  // Animation variants for individual items
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
@@ -111,7 +83,6 @@ const UploadModelPage = () => {
     },
   };
 
-  // Animation variants for tab transitions
   const tabVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { 
@@ -132,16 +103,11 @@ const UploadModelPage = () => {
     }
   };
 
-  // Tab configuration
   const tabs = [
     { id: 'upload', name: 'Upload Model', icon: FaUpload, count: 0 },
-    { id: 'models', name: 'My Models', icon: FaRobot, count: uploadedModels.length }
+    { id: 'models', name: 'My Models', icon: FaRobot, count: uploadedModels.length },
   ];
 
-  /**
-   * Renders the content for the active tab
-   * @returns {JSX.Element} The component for the active tab
-   */
   const renderTabContent = () => {
     switch (activeTab) {
       case 'upload':
@@ -302,11 +268,6 @@ const UploadModelPage = () => {
       </motion.div>
     </MainLayout>
   );
-}
-
-// Add prop type validation if needed
-// UploadModelPage.propTypes = {
-//   // Add prop types here
-// };
+};
 
 export default UploadModelPage;
