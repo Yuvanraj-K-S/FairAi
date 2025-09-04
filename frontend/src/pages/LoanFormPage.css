@@ -1,0 +1,131 @@
+/* LoanFormPage.css */
+
+.loan-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md);
+  background: var(--background);
+}
+
+.loan-form-container h2 {
+  text-align: center;
+  margin-bottom: var(--space-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.loan-form-container p {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xl);
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loan-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  background: var(--background);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  transition: var(--transition);
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+  outline: none;
+}
+
+.submit-btn {
+  width: 100%;
+  margin-top: var(--space-md);
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: var(--secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .loan-form-container {
+    padding: var(--space-md);
+  }
+  
+  .loan-form {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+  
+  .loan-form-container p {
+    max-width: 100%;
+  }
+}
+
+/* Form validation styles */
+.form-group input:invalid,
+.form-group select:invalid {
+  border-color: #ff4d4f;
+}
+
+.form-group input:focus:invalid,
+.form-group select:focus:invalid {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.error-message {
+  color: #ff4d4f;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+input:invalid + .error-message,
+select:invalid + .error-message {
+  display: block;
+}
