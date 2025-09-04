@@ -134,9 +134,29 @@ const UploadModelPage = () => {
 
   // Tab configuration
   const tabs = [
-    { id: 'upload', name: 'Upload Model', icon: FaUpload, count: 0 },
+    { id: 'upload', name: 'Upload New Model', icon: FaUpload },
     { id: 'models', name: 'My Models', icon: FaRobot, count: uploadedModels.length }
   ];
+  
+  // Handle model actions
+  const handleModelAction = (modelId, action) => {
+    switch(action) {
+      case 'view':
+        toast.success(`Viewing model ${modelId}`);
+        break;
+      case 'edit':
+        toast.info(`Editing model ${modelId}`);
+        break;
+      case 'delete':
+        if (window.confirm('Are you sure you want to delete this model?')) {
+          setUploadedModels(prev => prev.filter(m => m.id !== modelId));
+          toast.success('Model deleted successfully');
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   /**
    * Renders the content for the active tab
@@ -161,19 +181,12 @@ const UploadModelPage = () => {
         );
       case 'models':
         return (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Your Uploaded Models</h3>
-              <p className="mt-1 text-sm text-gray-500">Manage your AI models and view their details.</p>
-            </div>
-            
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
             {uploadedModels.length === 0 ? (
               <div className="text-center py-12">
-                <FaHistory className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No models uploaded yet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Get started by uploading your first AI model.
-                </p>
+                <FaRobot className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">No models yet</h3>
+                <p className="mt-1 text-sm text-gray-500">Upload your first model to get started</p>
                 <div className="mt-6">
                   <Button
                     onClick={() => setActiveTab('upload')}
@@ -186,51 +199,68 @@ const UploadModelPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                  {uploadedModels.map((model) => (
-                    <li key={model.id}>
-                      <div className="px-4 py-4 sm:px-6">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-indigo-600 truncate">
-                            {model.name}
-                          </p>
-                          <div className="ml-2 flex-shrink-0 flex">
-                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+              <ul className="divide-y divide-gray-200">
+                {uploadedModels.map((model) => (
+                  <li key={model.id} className="p-4 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 rounded-lg">
+                          <FaRobot className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium text-gray-900">{model.name}</p>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              model.status === 'Active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                               {model.status}
-                            </p>
+                            </span>
                           </div>
+                          <p className="text-sm text-gray-500">
+                            {model.type} • {model.framework} • {model.size}
+                          </p>
                         </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              <span className="capitalize">{model.type}</span>
-                              <span className="mx-1">•</span>
-                              {model.framework}
-                              <span className="mx-1">•</span>
-                              {model.size}
-                            </p>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <p>
-                              Uploaded <time dateTime={model.uploadDate}>
-                                {new Date(model.uploadDate).toLocaleDateString()}
-                              </time>
-                            </p>
-                          </div>
-                        </div>
-                        {model.description && (
-                          <div className="mt-2">
-                            <p className="text-sm text-gray-600 line-clamp-2">
-                              {model.description}
-                            </p>
-                          </div>
-                        )}
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => handleModelAction(model.id, 'view')}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          onClick={() => handleModelAction(model.id, 'edit')}
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleModelAction(model.id, 'delete')}
+                          variant="danger"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                    {model.description && (
+                      <div className="mt-3 pl-14">
+                        <p className="text-sm text-gray-600">{model.description}</p>
+                      </div>
+                    )}
+                    <div className="mt-2 pl-14 text-xs text-gray-500">
+                      Uploaded: {new Date(model.uploadDate).toLocaleString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         );
@@ -241,65 +271,66 @@ const UploadModelPage = () => {
 
   return (
     <MainLayout>
-      <motion.div 
-        className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8"
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-      >
-        <motion.div className="text-center mb-8" variants={itemVariants}>
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            AI Model Management
-          </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-            Upload and manage your AI models with ease
-          </p>
-        </motion.div>
-
-        <motion.div 
-          className="bg-white shadow overflow-hidden sm:rounded-lg"
-          variants={itemVariants}
-        >
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-2 px-4 pt-2">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  variant={activeTab === tab.id ? 'primary' : 'outline'}
-                  size="sm"
-                  className={`rounded-b-none border-b-0 ${
-                    activeTab === tab.id 
-                      ? 'bg-indigo-600 text-white' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <tab.icon className="mr-2 h-4 w-4" />
-                    {tab.name}
-                    {tab.count > 0 && (
-                      <span className="ml-2 py-0.5 px-2 rounded-full text-xs font-medium bg-indigo-100 text-indigo-600">
-                        {tab.count}
-                      </span>
-                    )}
-                  </div>
-                </Button>
-              ))}
-            </nav>
+      <div className="min-h-screen bg-white text-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+              AI Model Management
+            </h1>
+            <p className="text-lg text-gray-600">Upload and manage your AI models with ease</p>
           </div>
-          
-          <motion.div
-            key={activeTab}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={tabVariants}
-            className="p-6"
-          >
+
+          {/* Tabs */}
+          <div className="mb-8">
+            <div className="sm:hidden">
+              <label htmlFor="tabs" className="sr-only">Select a tab</label>
+              <select
+                id="tabs"
+                name="tabs"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+              >
+                <option value="upload">Upload New Model</option>
+                <option value="models">
+                  My Models {uploadedModels.length > 0 && `(${uploadedModels.length})`}
+                </option>
+              </select>
+            </div>
+            <div className="hidden sm:block">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center px-4 py-4 text-sm font-medium border-b-2 whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <tab.icon className="mr-2 h-5 w-5" />
+                      {tab.name}
+                      {tab.count > 0 && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
             {renderTabContent()}
-          </motion.div>
-        </motion.div>
-      </motion.div>
+          </div>
+        </div>
+      </div>
     </MainLayout>
   );
 }

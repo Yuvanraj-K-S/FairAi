@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiBarChart2 } from 'react-icons/fi';
+import { FiHome, FiFileText, FiBarChart2, FiUser } from 'react-icons/fi';
 
 function Navbar() {
   const location = useLocation();
@@ -8,34 +8,43 @@ function Navbar() {
   const navItems = [
     { path: '/', icon: <FiHome className="mr-2" />, label: 'Home' },
     { path: '/loan', icon: <FiFileText className="mr-2" />, label: 'Loan Form' },
+    { path: '/facial-upload', icon: <FiUser className="mr-2" />, label: 'Facial Recognition' },
     { path: '/results', icon: <FiBarChart2 className="mr-2" />, label: 'Results' },
   ];
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex
-          ">
-            <div className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-indigo-600">FairAI</span>
+        <div className="flex justify-between h-20">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                FairAI
+              </span>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  className={`inline-flex items-center px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                     location.pathname === item.path
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-blue-600 hover:border-b-2 hover:border-blue-100'
                   }`}
                 >
-                  {item.icon}
+                  {React.cloneElement(item.icon, {
+                    className: 'mr-2 h-5 w-5'
+                  })}
                   {item.label}
                 </Link>
               ))}
             </div>
+          </div>
+          <div className="flex items-center">
+            <button className="p-2 rounded-full hover:bg-blue-50 text-blue-600 transition-colors duration-200">
+              <FiUser className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
