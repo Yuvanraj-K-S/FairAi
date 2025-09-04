@@ -37,3 +37,4 @@ argparse
 pathlib
 jwt
 bcrypt
+PyJWT

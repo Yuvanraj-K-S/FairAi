@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask_cors import CORS
 import tempfile
 import os
 import json
@@ -16,6 +17,7 @@ from bson import json_util
 import traceback
 import logging
 import sys
+import time
 
 # Import debug utilities
 from debug_utils import (
@@ -36,6 +38,12 @@ logging.basicConfig(
         logging.FileHandler('app.log')
     ]
 )
+
+# Set MongoDB logger to only show errors
+logging.getLogger('pymongo').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.ERROR)
+
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -43,6 +51,15 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3001", "http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Configuration
 app.config.update(
@@ -71,6 +88,7 @@ def get_db():
     max_retries = 3
     retry_delay = 2  # seconds
     
+    last_error = None
     for attempt in range(max_retries):
         try:
             mongo_uri = os.getenv('MONGO_DB_URL')
@@ -91,7 +109,6 @@ def get_db():
                 
                 # Test the connection
                 client.admin.command('ping')
-                logger.info("✅ Successfully connected to MongoDB!")
                 
                 # Get or create database
                 db_name = os.getenv('MONGO_DB_NAME', 'fair_ai_auth')
@@ -102,19 +119,21 @@ def get_db():
                     db.users.create_index("email", unique=True)
                     db.users.create_index("created_at", expireAfterSeconds=86400)  # TTL index for 24h
                 except Exception as idx_error:
-                    logger.warning(f"Index creation warning: {idx_error}")
+                    logger.warning(f"Failed to create indexes: {str(idx_error)}")
                 
+                logger.info("Successfully connected to MongoDB!")
                 return db
                 
         except Exception as e:
-            if attempt == max_retries - 1:
-                logger.critical(f"❌ Failed to connect to MongoDB after {max_retries} attempts: {e}")
-                logger.debug(f"Stack trace: {traceback.format_exc()}")
-                return None
-            
-            logger.warning(f"⚠️ Attempt {attempt + 1} failed. Retrying in {retry_delay} seconds...")
-            time.sleep(retry_delay)
-            retry_delay *= 2  # Exponential backoff
+            last_error = e
+            logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+    
+    logger.error(f"Failed to connect to MongoDB after {max_retries} attempts")
+    if last_error:
+        logger.error(f"Last error: {str(last_error)}")
+    return None
 
 # JWT token required decorator
 def token_required(f):
@@ -153,7 +172,7 @@ def signup():
     with DebugContext(app.config['DEBUG']):
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed during signup")
                 return jsonify({
                     "status": "error", 
@@ -161,7 +180,7 @@ def signup():
                 }), 503  # Service Unavailable
                 
             data = request.get_json()
-            if not data:
+            if data is None:
                 return jsonify({"status": "error", "message": "No input data provided"}), 400
             
             # Log request data (excluding sensitive info in production)
@@ -215,7 +234,7 @@ def signup():
                 "token": token
             }), 201
             
-        except jwt.PyJWTError as jwt_err:
+        except (jwt.PyJWTError, jwt.InvalidTokenError, jwt.ExpiredSignatureError) as jwt_err:
             logger.error(f"JWT token generation error: {jwt_err}")
             return jsonify({
                 "status": "error",
@@ -234,7 +253,7 @@ def signup():
 def login():
     try:
         db = get_db()
-        if not db:
+        if db is None:
             return jsonify({"status": "error", "message": "Database connection failed"}), 500
             
         data = request.get_json()
@@ -296,6 +315,41 @@ def get_current_user(current_user):
             "status": "error",
             "message": str(e)
         }), 500
+
+# Token verification endpoint
+@app.route('/api/auth/verify', methods=['GET'])
+def verify_token():
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"isValid": False, "message": "No token provided"}), 401
+            
+        token = auth_header.split(' ')[1]
+        
+        try:
+            # Decode the token
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            
+            # Check if the token is expired
+            if 'exp' in payload and datetime.utcnow() > datetime.utcfromtimestamp(payload['exp']):
+                return jsonify({"isValid": False, "message": "Token has expired"}), 401
+                
+            # Token is valid
+            return jsonify({
+                "isValid": True,
+                "user": {
+                    "email": payload['email']
+                }
+            })
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({"isValid": False, "message": "Token has expired"}), 401
+        except jwt.InvalidTokenError as e:
+            return jsonify({"isValid": False, "message": "Invalid token"}), 401
+            
+    except Exception as e:
+        logger.error(f"Token verification error: {str(e)}")
+        return jsonify({"isValid": False, "message": "Token verification failed"}), 500
 
 # Health check endpoint
 @app.route('/health', methods=['GET'])
