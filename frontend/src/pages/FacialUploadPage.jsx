@@ -1,15 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { FaUpload, FaSun, FaMoon, FaFileAlt, FaSpinner } from 'react-icons/fa';
+import { FaUpload, FaFileAlt, FaSpinner } from 'react-icons/fa';
 
 const FacialUploadPage = () => {
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [modelFile, setModelFile] = useState(null);
   const [configFile, setConfigFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isConfigDragging, setIsConfigDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const handleDragOver = useCallback((e, isConfig = false) => {
     e.preventDefault();
@@ -67,32 +64,7 @@ const FacialUploadPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 transition-colors duration-300">
-      {/* Header */}
-      <header className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20">
-            <div className="flex items-center">
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-                FairAI
-              </span>
-            </div>
-            <nav className="hidden md:flex space-x-8 items-center">
-              <a href="/" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-blue-600">Home</a>
-              <a href="/facial-upload" className="px-3 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">Facial Recognition</a>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-blue-50 transition-colors"
-                aria-label="Toggle dark mode"
-              >
-                {isDarkMode ? <FaSun className="text-yellow-500" /> : <FaMoon className="text-gray-600" />}
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <div className="min-h-screen bg-white text-gray-800">
       <main className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Facial Recognition Model Upload</h1>

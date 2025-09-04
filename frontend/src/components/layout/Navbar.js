@@ -7,8 +7,8 @@ function Navbar() {
   
   const navItems = [
     { path: '/', icon: <FiHome className="mr-2" />, label: 'Home' },
-    { path: '/loan', icon: <FiFileText className="mr-2" />, label: 'Loan Form' },
-    { path: '/facial-upload', icon: <FiUser className="mr-2" />, label: 'Facial Recognition' },
+    { path: '/loan', icon: <FiFileText className="mr-2" />, label: 'Loan Approval Model' },
+    { path: '/facial-upload', icon: <FiUser className="mr-2" />, label: 'Facial Recognition Model' },
     { path: '/results', icon: <FiBarChart2 className="mr-2" />, label: 'Results' },
   ];
 

@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import HomePage from './pages/HomePage';
 import UploadModelPage from './pages/UploadModelPage';
 import LoanFormPage from './pages/LoanFormPage';
 import ResultsPage from './pages/ResultsPage';
@@ -104,8 +105,8 @@ function App() {
                 </MainLayout>
               </ProtectedRoute>
             }>
-              <Route index element={<UploadModelPage />} />
-              <Route path="/" element={<UploadModelPage />} />
+              <Route index element={<HomePage />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/loan" element={<LoanFormPage />} />
               <Route path="/facial-upload" element={<FacialUploadPage />} />
               <Route path="/results" element={<ResultsPage />} />
