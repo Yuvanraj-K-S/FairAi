@@ -35,51 +35,59 @@ F = TypeVar('F', bound=Callable[..., Any])
 class DebugTimer:
     """Context manager for timing code blocks."""
     
-    def __init__(self, name: str = "Block", logger: Optional[logging.Logger] = None):
+    def __init__(self, name: str = "Block"):
         self.name = name
-        self.logger = logger or logging.getLogger(__name__)
     
     def __enter__(self):
         self.start_time = time.perf_counter()
+        print(f"\n=== Timer Started: {self.name} ===")
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.end_time = time.perf_counter()
         self.duration = self.end_time - self.start_time
-        self.logger.info(f"{self.name} took {self.duration:.4f} seconds")
+        print(f"{self.name} took {self.duration:.4f} seconds")
+        print("===========================\n")
         return False
 
-def log_function_call(level: int = logging.DEBUG):
-    """Decorator to log function calls with arguments and return values."""
+def log_function_call(level: int = 0):
+    """Decorator to print function calls with arguments and return values."""
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args, **kwargs):
-            logger = logging.getLogger(func.__module__)
-            
             # Get function signature
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
             
-            # Log function call
-            logger.log(level, f"Calling {func.__qualname__} with args: {bound_args.arguments}")
+            # Print function call
+            print(f"\n=== Function Call ===")
+            print(f"Function: {func.__qualname__}")
+            print(f"Arguments: {bound_args.arguments}")
             
             try:
                 # Execute the function
-                with DebugTimer(f"Function {func.__qualname__} execution"):
-                    result = func(*args, **kwargs)
+                start_time = time.perf_counter()
+                result = func(*args, **kwargs)
+                end_time = time.perf_counter()
                 
-                # Log the result
+                # Print the result and timing
                 result_str = str(result)
-                if len(result_str) > 1000:  # Truncate long results
-                    result_str = result_str[:1000] + "... [truncated]"
-                logger.log(level, f"Function {func.__qualname__} returned: {result_str}")
+                if len(result_str) > 500:  # Truncate long results
+                    result_str = result_str[:500] + "... [truncated]"
+                
+                print(f"Execution time: {(end_time - start_time):.4f} seconds")
+                print(f"Returned: {result_str}")
+                print("===================\n")
                 
                 return result
                 
             except Exception as e:
-                # Log the exception
-                logger.error(f"Error in {func.__qualname__}: {str(e)}\n{traceback.format_exc()}")
+                # Print the exception
+                print(f"\n!!! Error in {func.__qualname__}:")
+                print(f"Error: {str(e)}")
+                traceback.print_exc()
+                print("===================\n")
                 raise
                 
         return cast(F, wrapper)

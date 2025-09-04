@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
@@ -90,38 +90,30 @@ function App() {
           }}
         />
         
-        <MainLayout>
-          <AnimatePresence mode="wait">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Auth />} />
-              <Route path="/signup" element={<Auth isSignUp />} />
-              
-              {/* Protected Routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <UploadModelPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/loan" element={
-                <ProtectedRoute>
-                  <LoanFormPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/facial-upload" element={
-                <ProtectedRoute>
-                  <FacialUploadPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/results" element={
-                <ProtectedRoute>
-                  <ResultsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </AnimatePresence>
-        </MainLayout>
+        <AnimatePresence mode="wait">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Auth />} />
+            <Route path="/signup" element={<Auth isSignUp />} />
+            
+            {/* Protected Routes */}
+            <Route element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <Outlet />
+                </MainLayout>
+              </ProtectedRoute>
+            }>
+              <Route index element={<UploadModelPage />} />
+              <Route path="/" element={<UploadModelPage />} />
+              <Route path="/loan" element={<LoanFormPage />} />
+              <Route path="/facial-upload" element={<FacialUploadPage />} />
+              <Route path="/results" element={<ResultsPage />} />
+            </Route>
+            
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </AnimatePresence>
       </div>
     </Router>
   );

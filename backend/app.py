@@ -15,7 +15,6 @@ import jwt
 import bcrypt
 from bson import json_util
 import traceback
-import logging
 import sys
 import time
 
@@ -25,26 +24,8 @@ from debug_utils import (
     log_function_call, debug_save_data, enable_debug_logging
 )
 
-# Enable debug logging if DEBUG environment variable is set
-if os.getenv('DEBUG', 'false').lower() == 'true':
-    enable_debug_logging()
-
-# Configure root logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('app.log')
-    ]
-)
-
-# Set MongoDB logger to only show errors
-logging.getLogger('pymongo').setLevel(logging.ERROR)
-logging.getLogger('urllib3').setLevel(logging.ERROR)
-
-# Get logger for this module
-logger = logging.getLogger(__name__)
+# Enable debug printing if DEBUG environment variable is set
+DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
 # Load environment variables
 load_dotenv()
@@ -72,17 +53,16 @@ app.config.update(
 # Request logging
 @app.before_request
 def log_request_info():
-    if app.config['DEBUG']:
-        logger.info(f"Request: {request.method} {request.path}\nHeaders: {dict(request.headers)}\nBody: {request.get_data()}")
+    if DEBUG:
+        print(f"\n=== Request ===\n{request.method} {request.path}\nHeaders: {dict(request.headers)}\nBody: {request.get_data()}\n==============\n")
 
 @app.after_request
 def log_response(response):
-    if app.config['DEBUG']:
-        logger.info(f"Response: {response.status}\nHeaders: {dict(response.headers)}\nBody: {response.get_data()}")
+    if DEBUG:
+        print(f"\n=== Response ===\nStatus: {response.status}\nHeaders: {dict(response.headers)}\nBody: {response.get_data()}\n===============\n")
     return response
 
 # MongoDB connection
-@log_function_call(logging.DEBUG)
 def get_db():
     """Get MongoDB database connection with error handling and retry logic."""
     max_retries = 3
@@ -95,44 +75,50 @@ def get_db():
             if not mongo_uri:
                 raise ValueError("MongoDB URI not found in environment variables")
             
-            with DebugTimer("MongoDB connection"):
-                client = MongoClient(
-                    mongo_uri,
-                    server_api=ServerApi('1'),
-                    tlsCAFile=certifi.where(),
-                    connectTimeoutMS=5000,
-                    socketTimeoutMS=30000,
-                    serverSelectionTimeoutMS=5000,
-                    retryWrites=True,
-                    w='majority'
-                )
-                
-                # Test the connection
-                client.admin.command('ping')
-                
-                # Get or create database
-                db_name = os.getenv('MONGO_DB_NAME', 'fair_ai_auth')
-                db = client[db_name]
-                
-                # Create indexes if they don't exist
-                try:
-                    db.users.create_index("email", unique=True)
-                    db.users.create_index("created_at", expireAfterSeconds=86400)  # TTL index for 24h
-                except Exception as idx_error:
-                    logger.warning(f"Failed to create indexes: {str(idx_error)}")
-                
-                logger.info("Successfully connected to MongoDB!")
-                return db
-                
+            if DEBUG:
+                print(f"Connecting to MongoDB (attempt {attempt + 1}/{max_retries})...")
+            
+            client = MongoClient(
+                mongo_uri,
+                server_api=ServerApi('1'),
+                tlsCAFile=certifi.where(),
+                connectTimeoutMS=5000,
+                socketTimeoutMS=30000,
+                serverSelectionTimeoutMS=5000,
+                retryWrites=True,
+                w='majority'
+            )
+            
+            # Test the connection
+            client.admin.command('ping')
+            
+            # Get or create database
+            db_name = os.getenv('MONGO_DB_NAME', 'fair_ai_auth')
+            db = client[db_name]
+            
+            # Create indexes if they don't exist
+            try:
+                db.users.create_index("email", unique=True)
+                db.users.create_index("created_at", expireAfterSeconds=86400)  # TTL index for 24h
+            except Exception as idx_error:
+                if DEBUG:
+                    print(f"Warning: Failed to create indexes: {str(idx_error)}")
+            
+            if DEBUG:
+                print("Successfully connected to MongoDB!")
+            return db
+            
         except Exception as e:
             last_error = e
-            logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+            if DEBUG:
+                print(f"Attempt {attempt + 1} failed: {str(e)}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
     
-    logger.error(f"Failed to connect to MongoDB after {max_retries} attempts")
+    error_msg = f"Error: Failed to connect to MongoDB after {max_retries} attempts"
     if last_error:
-        logger.error(f"Last error: {str(last_error)}")
+        error_msg += f"\nLast error: {str(last_error)}"
+    print(error_msg)
     return None
 
 # JWT token required decorator
@@ -166,14 +152,15 @@ def parse_json(data):
 
 # Signup endpoint
 @app.route('/api/auth/signup', methods=['POST'])
-@log_function_call(logging.INFO)
+@log_function_call()
 def signup():
     """User registration endpoint with input validation and error handling."""
     with DebugContext(app.config['DEBUG']):
         try:
             db = get_db()
             if db is None:
-                logger.error("Database connection failed during signup")
+                if DEBUG:
+                    print("Error: Database connection failed during signup")
                 return jsonify({
                     "status": "error", 
                     "message": "Database connection failed. Please try again later."
@@ -183,12 +170,12 @@ def signup():
             if data is None:
                 return jsonify({"status": "error", "message": "No input data provided"}), 400
             
-            # Log request data (excluding sensitive info in production)
-            if app.config['DEBUG']:
+            # Print request data (excluding sensitive info in production)
+            if DEBUG:
                 log_data = data.copy()
                 if 'password' in log_data:
                     log_data['password'] = '***REDACTED***'
-                logger.debug(f"Signup request data: {log_data}")
+                print(f"\n=== Signup Request ===\n{log_data}\n==================\n")
             
             # Validate input
             if 'email' not in data or 'password' not in data or 'name' not in data:
@@ -591,35 +578,38 @@ def init_app():
             # Test database connection
             db = get_db()
             if db is None:
-                logger.error("Failed to initialize database connection")
+                print("Error: Failed to initialize database connection", file=sys.stderr)
                 return False
                 
             # Additional initialization code can go here
-            logger.info("Application initialized successfully")
+            if DEBUG:
+                print("\n=== Application initialized successfully ===\n")
             return True
             
     except Exception as e:
-        logger.critical(f"Failed to initialize application: {e}")
-        logger.debug(f"Stack trace: {traceback.format_exc()}")
+        print(f"\n!!! CRITICAL: Failed to initialize application: {e}", file=sys.stderr)
+        if DEBUG:
+            traceback.print_exc()
         return False
 
 if __name__ == '__main__':
     # Initialize application
     if not init_app():
-        logger.error("Application initialization failed. Exiting...")
+        print("Error: Application initialization failed. Exiting...", file=sys.stderr)
         sys.exit(1)
         
     # Start the Flask development server
     try:
-        logger.info("Starting Flask development server...")
+        print("\n=== Starting Flask development server... ===\n")
         app.run(
             host=os.getenv('HOST', '0.0.0.0'),
             port=int(os.getenv('PORT', 5000)),
-            debug=app.config['DEBUG'],
-            use_reloader=app.config['DEBUG'],
+            debug=DEBUG,
+            use_reloader=DEBUG,
             threaded=True
         )
     except Exception as e:
-        logger.critical(f"Fatal error: {e}")
-        logger.debug(f"Stack trace: {traceback.format_exc()}")
+        print(f"\n!!! FATAL ERROR: {e}", file=sys.stderr)
+        if DEBUG:
+            traceback.print_exc()
         sys.exit(1)
