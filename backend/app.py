@@ -1,0 +1,571 @@
+from flask import Flask, request, jsonify, send_file, send_from_directory
+import tempfile
+import os
+import json
+from werkzeug.utils import secure_filename
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
+import certifi
+from datetime import datetime, timedelta
+from bson.objectid import ObjectId
+from functools import wraps
+import jwt
+import bcrypt
+from bson import json_util
+import traceback
+import logging
+import sys
+
+# Import debug utilities
+from debug_utils import (
+    DebugTimer, DebugContext, DataProfiler, 
+    log_function_call, debug_save_data, enable_debug_logging
+)
+
+# Enable debug logging if DEBUG environment variable is set
+if os.getenv('DEBUG', 'false').lower() == 'true':
+    enable_debug_logging()
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Configuration
+app.config.update(
+    SECRET_KEY=os.getenv('SECRET_KEY', 'your-secret-key-here'),
+    JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=1),
+    DEBUG=os.getenv('DEBUG', 'false').lower() == 'true',
+    PROPAGATE_EXCEPTIONS=True
+)
+
+# Request logging
+@app.before_request
+def log_request_info():
+    if app.config['DEBUG']:
+        logger.info(f"Request: {request.method} {request.path}\nHeaders: {dict(request.headers)}\nBody: {request.get_data()}")
+
+@app.after_request
+def log_response(response):
+    if app.config['DEBUG']:
+        logger.info(f"Response: {response.status}\nHeaders: {dict(response.headers)}\nBody: {response.get_data()}")
+    return response
+
+# MongoDB connection
+@log_function_call(logging.DEBUG)
+def get_db():
+    """Get MongoDB database connection with error handling and retry logic."""
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            mongo_uri = os.getenv('MONGO_DB_URL')
+            if not mongo_uri:
+                raise ValueError("MongoDB URI not found in environment variables")
+            
+            with DebugTimer("MongoDB connection"):
+                client = MongoClient(
+                    mongo_uri,
+                    server_api=ServerApi('1'),
+                    tlsCAFile=certifi.where(),
+                    connectTimeoutMS=5000,
+                    socketTimeoutMS=30000,
+                    serverSelectionTimeoutMS=5000,
+                    retryWrites=True,
+                    w='majority'
+                )
+                
+                # Test the connection
+                client.admin.command('ping')
+                logger.info("✅ Successfully connected to MongoDB!")
+                
+                # Get or create database
+                db_name = os.getenv('MONGO_DB_NAME', 'fair_ai_auth')
+                db = client[db_name]
+                
+                # Create indexes if they don't exist
+                try:
+                    db.users.create_index("email", unique=True)
+                    db.users.create_index("created_at", expireAfterSeconds=86400)  # TTL index for 24h
+                except Exception as idx_error:
+                    logger.warning(f"Index creation warning: {idx_error}")
+                
+                return db
+                
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logger.critical(f"❌ Failed to connect to MongoDB after {max_retries} attempts: {e}")
+                logger.debug(f"Stack trace: {traceback.format_exc()}")
+                return None
+            
+            logger.warning(f"⚠️ Attempt {attempt + 1} failed. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+            retry_delay *= 2  # Exponential backoff
+
+# JWT token required decorator
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
+            
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+            
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = get_db().users.find_one({"email": data['email']})
+            if not current_user:
+                return jsonify({'message': 'User not found!'}), 401
+                
+        except Exception as e:
+            return jsonify({'message': 'Token is invalid!', 'error': str(e)}), 401
+            
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+# Helper function to parse MongoDB documents to JSON
+def parse_json(data):
+    return json.loads(json_util.dumps(data))
+
+# Signup endpoint
+@app.route('/api/auth/signup', methods=['POST'])
+@log_function_call(logging.INFO)
+def signup():
+    """User registration endpoint with input validation and error handling."""
+    with DebugContext(app.config['DEBUG']):
+        try:
+            db = get_db()
+            if not db:
+                logger.error("Database connection failed during signup")
+                return jsonify({
+                    "status": "error", 
+                    "message": "Database connection failed. Please try again later."
+                }), 503  # Service Unavailable
+                
+            data = request.get_json()
+            if not data:
+                return jsonify({"status": "error", "message": "No input data provided"}), 400
+            
+            # Log request data (excluding sensitive info in production)
+            if app.config['DEBUG']:
+                log_data = data.copy()
+                if 'password' in log_data:
+                    log_data['password'] = '***REDACTED***'
+                logger.debug(f"Signup request data: {log_data}")
+            
+            # Validate input
+            if 'email' not in data or 'password' not in data or 'name' not in data:
+                return jsonify({"status": "error", "message": "Missing required fields"}), 400
+                
+            email = data['email'].lower().strip()
+            password = data['password'].strip()
+            name = data['name'].strip()
+            
+            # Check if user already exists
+            if db.users.find_one({"email": email}):
+                return jsonify({"status": "error", "message": "Email already registered"}), 400
+            
+            # Hash password
+            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
+            # Create user
+            user = {
+                "name": name,
+                "email": email,
+                "password": hashed.decode('utf-8'),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            
+            # Insert user
+            result = db.users.insert_one(user)
+            user['_id'] = str(result.inserted_id)
+            
+            # Generate JWT token
+            token = jwt.encode({
+                'email': email,
+                'exp': datetime.utcnow() + app.config['JWT_ACCESS_TOKEN_EXPIRES']
+            }, app.config['SECRET_KEY'])
+            
+            # Remove password from response
+            user.pop('password', None)
+            
+            return jsonify({
+                "status": "success",
+                "message": "User created successfully",
+                "user": parse_json(user),
+                "token": token
+            }), 201
+            
+        except jwt.PyJWTError as jwt_err:
+            logger.error(f"JWT token generation error: {jwt_err}")
+            return jsonify({
+                "status": "error",
+                "message": "Error generating authentication token"
+            }), 500
+            
+        except Exception as e:
+            logger.error(f"Error in signup: {str(e)}", exc_info=True)
+            return jsonify({
+                "status": "error",
+                "message": "An unexpected error occurred during signup"
+            }), 500
+
+# Login endpoint
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        db = get_db()
+        if not db:
+            return jsonify({"status": "error", "message": "Database connection failed"}), 500
+            
+        data = request.get_json()
+        
+        # Validate input
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({"status": "error", "message": "Email and password are required"}), 400
+            
+        email = data['email'].lower().strip()
+        password = data['password'].strip()
+        
+        # Find user
+        user = db.users.find_one({"email": email})
+        if not user:
+            return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+            
+        # Verify password
+        if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+            return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+            
+        # Generate JWT token
+        token = jwt.encode({
+            'email': user['email'],
+            'exp': datetime.utcnow() + app.config['JWT_ACCESS_TOKEN_EXPIRES']
+        }, app.config['SECRET_KEY'])
+        
+        # Remove password from response
+        user['_id'] = str(user['_id'])
+        user.pop('password', None)
+        
+        return jsonify({
+            "status": "success",
+            "message": "Login successful",
+            "user": parse_json(user),
+            "token": token
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# Protected route example
+@app.route('/api/auth/me', methods=['GET'])
+@token_required
+def get_current_user(current_user):
+    try:
+        # Remove password before sending user data
+        current_user.pop('password', None)
+        current_user['_id'] = str(current_user['_id'])
+        
+        return jsonify({
+            "status": "success",
+            "user": parse_json(current_user)
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# Health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat()
+    }), 200
+
+# Save uploaded file to temporary directory
+def save_uploaded_file(file, target_dir):
+    if not file:
+        return None
+    
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(target_dir, filename)
+    file.save(file_path)
+    return file_path
+
+# Face recognition evaluation endpoint
+@app.route('/api/face/evaluate', methods=['POST'])
+@token_required
+def evaluate_face_model(current_user):
+    try:
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Get uploaded files
+            if 'model_file' not in request.files:
+                return jsonify({"status": "error", "message": "No model file provided"}), 400
+                
+            model_file = request.files['model_file']
+            config_file = request.files.get('config_file')
+            
+            # Save files to temp directory
+            model_path = save_uploaded_file(model_file, temp_dir)
+            config_path = save_uploaded_file(config_file, temp_dir) if config_file else None
+            
+            try:
+                from bias.face_recognition_bias import FaceBiasEvaluator, ValidationError
+            except ImportError as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Could not import face recognition module: {str(e)}"
+                }), 500
+            
+            try:
+                # Initialize and run the evaluator
+                evaluator = FaceBiasEvaluator(
+                    model_path=model_path,
+                    config_path=config_path,
+                    dataset_path=None  # We'll handle dataset separately
+                )
+                
+                # Get parameters from request
+                threshold = float(request.form.get('threshold', 0.5))
+                evaluator.threshold = threshold
+                
+                # Run evaluation
+                output_dir = os.path.join(temp_dir, 'results')
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # If dataset is provided, use it; otherwise create a sample
+                if 'dataset_zip' in request.files:
+                    dataset_zip = request.files['dataset_zip']
+                    dataset_path = os.path.join(temp_dir, 'dataset')
+                    os.makedirs(dataset_path, exist_ok=True)
+                    
+                    # Save and extract dataset
+                    zip_path = os.path.join(temp_dir, 'dataset.zip')
+                    dataset_zip.save(zip_path)
+                    shutil.unpack_archive(zip_path, dataset_path)
+                    
+                    # Update evaluator with dataset path
+                    evaluator.dataset_path = dataset_path
+                
+                # Run the evaluation
+                results = evaluator.run_evaluation(output_dir=output_dir)
+                
+                # Prepare response data
+                response_data = {
+                    'status': 'success',
+                    'metrics': {},
+                    'visualizations': {},
+                    'recommendations': []
+                }
+                
+                # Read metrics from results
+                metrics_path = os.path.join(output_dir, 'metrics.json')
+                if os.path.exists(metrics_path):
+                    with open(metrics_path, 'r') as f:
+                        response_data['metrics'] = json.load(f)
+                
+                # Read recommendations if available
+                recs_path = os.path.join(output_dir, 'recommendations.txt')
+                if os.path.exists(recs_path):
+                    with open(recs_path, 'r') as f:
+                        response_data['recommendations'] = [line.strip() for line in f if line.strip()]
+                
+                # Convert visualizations to base64
+                viz_dir = os.path.join(output_dir, 'visualizations')
+                if os.path.exists(viz_dir):
+                    response_data['visualizations'] = {}
+                    for viz_file in os.listdir(viz_dir):
+                        if viz_file.endswith(('.png', '.jpg', '.jpeg')):
+                            with open(os.path.join(viz_dir, viz_file), 'rb') as f:
+                                response_data['visualizations'][viz_file] = f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                
+                return jsonify(response_data)
+                
+            except ValidationError as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Validation error: {str(e)}"
+                }), 400
+            except Exception as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Error during face recognition evaluation: {str(e)}"
+                }), 500
+                
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Unexpected error: {str(e)}",
+            "traceback": traceback.format_exc()
+        }), 500
+
+# Loan evaluation endpoint
+@app.route('/api/loan/evaluate', methods=['POST'])
+@token_required
+def evaluate_loan_model(current_user):
+    try:
+        # Check if files are present in the request
+        if 'model_file' not in request.files or 'test_csv' not in request.files:
+            return jsonify({
+                "status": "error",
+                "message": "Both model_file and test_csv are required"
+            }), 400
+            
+        model_file = request.files['model_file']
+        test_csv = request.files['test_csv']
+        
+        # Get parameters from form data
+        params_str = request.form.get('params', '{}')
+        try:
+            params = json.loads(params_str)
+        except json.JSONDecodeError:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid JSON in params field"
+            }), 400
+            
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save uploaded files
+            model_path = os.path.join(temp_dir, secure_filename(model_file.filename))
+            test_path = os.path.join(temp_dir, secure_filename(test_csv.filename))
+            
+            model_file.save(model_path)
+            test_csv.save(test_path)
+            
+            # Import the loan approval evaluator
+            try:
+                from bias.loan_approval import MLFairnessEvaluator, ValidationError
+            except ImportError as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Could not import loan approval module: {str(e)}"
+                }), 500
+            
+                # Initialize and run the evaluator
+                evaluator = MLFairnessEvaluator(
+                    model_path=model_path,
+                    data_path=test_path,
+                    params=params,
+                    output_dir=temp_dir
+                )
+                
+                # Run the evaluation
+                results = evaluator.run_evaluation()
+                
+                # Prepare response data
+                response_data = {
+                    'status': 'success',
+                    'metrics': {},
+                    'visualizations': {},
+                    'recommendations': []
+                }
+                
+                # Read metrics from results
+                metrics_path = os.path.join(temp_dir, 'metrics.json')
+                if os.path.exists(metrics_path):
+                    with open(metrics_path, 'r') as f:
+                        response_data['metrics'] = json.load(f)
+                
+                # Read recommendations
+                recs_path = os.path.join(temp_dir, 'recommendations.txt')
+                if os.path.exists(recs_path):
+                    with open(recs_path, 'r') as f:
+                        response_data['recommendations'] = [line.strip() for line in f if line.strip()]
+                
+                # Convert visualizations to base64
+                viz_dir = os.path.join(temp_dir, 'visualizations')
+                if os.path.exists(viz_dir):
+                    for viz_file in os.listdir(viz_dir):
+                        if viz_file.endswith(('.png', '.jpg', '.jpeg')):
+                            with open(os.path.join(viz_dir, viz_file), 'rb') as f:
+                                response_data['visualizations'][viz_file] = f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                
+                # Include predictions if available
+                preds_path = os.path.join(temp_dir, 'predictions.csv')
+                if os.path.exists(preds_path):
+                    with open(preds_path, 'r') as f:
+                        response_data['predictions'] = f.read()
+                
+                return jsonify(response_data)
+                
+            except ValidationError as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Validation error: {str(e)}"
+                }), 400
+            except Exception as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Error during evaluation: {str(e)}"
+                }), 500
+                
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Unexpected error: {str(e)}"
+        }), 500
+
+def init_app():
+    """Initialize the Flask application with error handling."""
+    try:
+        with DebugTimer("Application initialization"):
+            # Test database connection
+            db = get_db()
+            if db is None:
+                logger.error("Failed to initialize database connection")
+                return False
+                
+            # Additional initialization code can go here
+            logger.info("Application initialized successfully")
+            return True
+            
+    except Exception as e:
+        logger.critical(f"Failed to initialize application: {e}")
+        logger.debug(f"Stack trace: {traceback.format_exc()}")
+        return False
+
+if __name__ == '__main__':
+    # Initialize application
+    if not init_app():
+        logger.error("Application initialization failed. Exiting...")
+        sys.exit(1)
+        
+    # Start the Flask development server
+    try:
+        logger.info("Starting Flask development server...")
+        app.run(
+            host=os.getenv('HOST', '0.0.0.0'),
+            port=int(os.getenv('PORT', 5000)),
+            debug=app.config['DEBUG'],
+            use_reloader=app.config['DEBUG'],
+            threaded=True
+        )
+    except Exception as e:
+        logger.critical(f"Fatal error: {e}")
+        logger.debug(f"Stack trace: {traceback.format_exc()}")
+        sys.exit(1)
