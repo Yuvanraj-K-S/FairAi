@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiUpload, FiDatabase, FiSliders, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import UploadModelForm from '../components/upload/UploadModelForm';
 import UploadDatasetForm from '../components/upload/UploadDatasetForm';
 import DatasetPreview from '../components/upload/DatasetPreview';
-import { FeaturesSelector, LabelDropdown } from '../components/config/FeaturesSelector';
+import FeaturesSelector, { LabelDropdown } from '../components/config/FeaturesSelector';
 import ThresholdSlider from '../components/run/ThresholdSlider';
 import RunEvaluationButton from '../components/run/RunEvaluationButton';
 
 function UploadModelPage() {
   // State for model file
   const [modelFile, setModelFile] = useState(null);
+  const [logs, setLogs] = useState([]);
   
   // State for dataset file and preview
   const [csvFile, setCsvFile] = useState(null);
@@ -20,6 +21,11 @@ function UploadModelPage() {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [label, setLabel] = useState('');
   const [threshold, setThreshold] = useState(0.5);
+  
+  // Add a log entry
+  const addLog = useCallback((message, type = 'info') => {
+    setLogs(prevLogs => [...prevLogs, { message, type }]);
+  }, []);
   
   // Reset features and label when dataset changes
   useEffect(() => {
@@ -82,7 +88,15 @@ function UploadModelPage() {
               <div className="px-6 py-5">
                 <UploadModelForm 
                   modelFile={modelFile}
-                  setModelFile={setModelFile}
+                  setModelFile={(file) => {
+                    setModelFile(file);
+                    if (file) {
+                      addLog(`Selected model: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+                    } else {
+                      addLog('Model file removed');
+                    }
+                  }}
+                  logs={logs}
                 />
               </div>
             </div>

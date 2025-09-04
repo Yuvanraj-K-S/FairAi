@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function FeaturesSelector({ headers = [], selectedFeatures = [], setSelectedFeatures }) {
+export default function FeaturesSelector({ headers = [], selectedFeatures = [], setSelectedFeatures }) {
   const toggle = (col) => {
     if (selectedFeatures.includes(col)) {
       setSelectedFeatures(selectedFeatures.filter((c) => c !== col));

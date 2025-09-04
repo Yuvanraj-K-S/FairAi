@@ -29,7 +29,7 @@ export default function UploadDatasetForm({ csvFile, setCsvFile, setHeaders, set
         alert('Failed to parse CSV: ' + err.message);
       }
     });
-  }, []);
+  }, [setCsvFile, setHeaders, setPreviewRows]);
 
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
