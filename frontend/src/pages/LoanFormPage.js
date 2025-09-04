@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { FiUpload, FiCheckCircle, FiCamera } from 'react-icons/fi';
+import { FiCheckCircle, FiCamera } from 'react-icons/fi';
 
 function LoanFormPage() {
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -58,109 +58,123 @@ function LoanFormPage() {
     setIsUploaded(false);
   };
 
-  if (isUploaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-            <FiCheckCircle className="h-8 w-8 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Uploaded Successfully!</h2>
-          <p className="text-gray-600 mb-6">Your application has been uploaded successfully.</p>
-          
-          {preview && (
-            <div className="mb-6">
-              <div className="relative pb-[100%] rounded-lg overflow-hidden border-2 border-dashed border-gray-200">
-                <img 
-                  src={preview} 
-                  alt="Uploaded preview" 
-                  className="absolute inset-0 w-full h-full object-contain p-2"
-                />
-              </div>
-            </div>
-          )}
-          
-          <button
-            onClick={resetForm}
-            className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-          >
-            Upload Another Application
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Upload Your Application</h2>
-          <p className="text-sm text-gray-500 mt-1">Supported formats: JPG, PNG, PDF (max 5MB)</p>
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-2">
+            Loan Application
+          </h1>
+          <p className="text-gray-600">Upload your loan application for processing</p>
         </div>
-        
-        <div className="p-6">
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <div className="flex justify-center">
-                    <FiCamera className="mx-auto h-12 w-12 text-gray-400" />
-                  </div>
-                  <div className="flex text-sm text-gray-600">
-                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                      <span>Upload Application</span>
-                      <input 
-                        type="file" 
-                        className="sr-only" 
-                        onChange={handleImageChange}
-                        accept="image/*"
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    JPG, PNG, or PDF up to 5MB
-                  </p>
-                </div>
-              </div>
 
-              {preview && (
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-                  <div className="relative pb-[100%] rounded-lg overflow-hidden border-2 border-dashed border-gray-200">
-                    <img 
-                      src={preview} 
-                      alt="Preview" 
-                      className="absolute inset-0 w-full h-full object-contain p-2"
-                    />
-                  </div>
+        <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+          <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-medium text-gray-900">Upload Application</h2>
+          </div>
+          
+          <div className="px-6 py-8">
+            {isUploaded ? (
+              <div className="text-center py-8">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                  <FiCheckCircle className="h-8 w-8 text-green-600" />
                 </div>
-              )}
-
-              <div className="pt-2">
+                <h3 className="mt-4 text-lg font-medium text-gray-900">Application Submitted</h3>
+                <p className="mt-2 text-sm text-gray-500 mb-6">
+                  Your loan application has been successfully uploaded and is being processed.
+                </p>
                 <button
-                  type="submit"
-                  disabled={!selectedApplication || isUploading}
-                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${selectedApplication ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                  onClick={resetForm}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  {isUploading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Uploading...
-                    </>
-                  ) : 'Upload Application'}
+                  Upload Another Application
                 </button>
               </div>
-            </div>
-          </form>
+            ) : (
+              <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors duration-150">
+                <div className="space-y-4 text-center">
+                  {preview ? (
+                    <div className="space-y-4">
+                      <img
+                        src={preview}
+                        alt="Application preview"
+                        className="mx-auto max-h-60 rounded-lg shadow-sm"
+                      />
+                      <div className="flex justify-center space-x-3">
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('application-upload').click()}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreview('')}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-center">
+                        <div className="p-4 rounded-full bg-blue-50">
+                          <FiCamera className="h-10 w-10 text-blue-600" />
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <label
+                          htmlFor="application-upload"
+                          className="relative cursor-pointer font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md px-2 py-1"
+                        >
+                          <span>Click to upload</span>
+                          <input
+                            id="application-upload"
+                            name="application-upload"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                          />
+                        </label>
+                        <p className="mt-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, PDF up to 5MB</p>
+                    </>
+                  )}
+                  {preview && (
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!selectedApplication || isUploading}
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                          !selectedApplication || isUploading
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                        } focus:outline-none transition-colors duration-150`}
+                      >
+                        {isUploading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Uploading...
+                          </>
+                        ) : 'Submit Application'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 export default LoanFormPage;
