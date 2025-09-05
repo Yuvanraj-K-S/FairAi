@@ -131,9 +131,6 @@ export default function ResultsPage() {
 
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-            <button className="flex h-12 w-full items-center justify-center rounded-md bg-blue-700 px-6 text-base font-semibold text-white shadow-sm hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 sm:w-auto">
-              View Loan Agreement
-            </button>
             <button className="flex h-12 w-full items-center justify-center rounded-md border border-gray-300 bg-white px-6 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 sm:w-auto">
               Download PDF
             </button>

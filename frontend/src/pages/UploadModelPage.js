@@ -30,7 +30,7 @@ const UploadModelPage = () => {
     
     setIsUploading(true);
     
-    // Simulate upload
+    // Simulate upload for non-face models
     setTimeout(() => {
       setIsUploading(false);
       setModelFile(null);
@@ -59,12 +59,9 @@ const UploadModelPage = () => {
           <UploadModelForm
             modelFile={modelFile}
             setModelFile={setModelFile}
-            modelType={modelType}
-            setModelType={setModelType}
-            modelFramework={modelFramework}
-            setModelFramework={setModelFramework}
-            handleUpload={handleUpload}
+            onUpload={handleUpload}
             isUploading={isUploading}
+            logs={[]}
           />
         </motion.div>
       </div>

@@ -1,25 +1,30 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaFileAlt, FaTimes, FaCheck, FaExclamationTriangle, FaUpload } from 'react-icons/fa';
+import { FaFileAlt, FaTimes, FaCheck, FaExclamationTriangle, FaUpload, FaArrowRight } from 'react-icons/fa';
 import Button from '../ui/Button';
+import { postFaceEvaluate } from '../../api/client';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function UploadModelForm({ 
   modelFile, 
   setModelFile, 
   onUpload,
-  isUploading,
-  logs = [],
-  modelType,
-  setModelType,
-  modelFramework,
-  setModelFramework
+  logs = []
 }) {
   const allowed = ['.pkl', '.joblib', '.onnx', '.pt', '.pth', '.h5'];
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState(null);
+  const [modelType, setModelType] = useState('face-recognition');
+  const [modelFramework, setModelFramework] = useState('tensorflow');
+  const [isFaceModel, setIsFaceModel] = useState(true);
+  const [threshold, setThreshold] = useState(0.5);
+  const [configFile, setConfigFile] = useState(null);
+  const [datasetFile, setDatasetFile] = useState(null);
   const [modelName, setModelName] = useState('');
   const [modelDescription, setModelDescription] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const dropAreaRef = useRef(null);
   const formRef = useRef(null);
@@ -70,13 +75,60 @@ export default function UploadModelForm({
     return { valid: true };
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!modelFile || !modelName.trim()) {
-      setFileError('Please provide a model name and select a file');
+    if (!modelFile) {
+      toast.error('Please select a model file to upload');
       return;
     }
-    onUpload(e);
+    
+    if (isFaceModel && !datasetFile) {
+      toast.error('Please upload a dataset for face recognition evaluation');
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      if (isFaceModel) {
+        const formData = new FormData();
+        formData.append('model_file', modelFile);
+        
+        if (configFile) {
+          formData.append('config_file', configFile);
+        }
+        if (datasetFile) {
+          formData.append('dataset_zip', datasetFile);
+        }
+        
+        const response = await postFaceEvaluate(formData, threshold, (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        });
+        
+        toast.success('Face model evaluation completed!');
+        // You can handle the response data here (e.g., show results in a modal)
+        console.log('Evaluation results:', response);
+        
+        // Reset form after successful upload
+        setModelFile(null);
+        setConfigFile(null);
+        setDatasetFile(null);
+        setModelName('');
+        setModelDescription('');
+      } else {
+        // Call the parent's onUpload for other model types
+        await onUpload(e);
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to upload and evaluate model';
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleFile = useCallback((file) => {
@@ -141,7 +193,7 @@ export default function UploadModelForm({
       initial="hidden"
       animate="visible"
     >
-      <form ref={formRef} onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
         <motion.div 
           ref={dropAreaRef}
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -236,8 +288,12 @@ export default function UploadModelForm({
                       id="model-type"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       value={modelType}
-                      onChange={(e) => setModelType(e.target.value)}
+                      onChange={(e) => {
+                        setModelType(e.target.value);
+                        setIsFaceModel(e.target.value === 'face-recognition');
+                      }}
                     >
+                      <option value="face-recognition">Face Recognition</option>
                       <option value="classification">Classification</option>
                       <option value="regression">Regression</option>
                       <option value="object-detection">Object Detection</option>
@@ -284,44 +340,110 @@ export default function UploadModelForm({
           </motion.div>
         )}
 
-        <motion.div className="flex justify-end mt-6 space-x-3" variants={itemVariants}>
-          {modelFile && !isUploading && (
-            <Button
-              type="button"
-              onClick={() => {
-                setModelFile(null);
-                setModelName('');
-                setModelDescription('');
-                setFileError(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-                }
-              }}
-              variant="outline"
-              size="md"
-              className="text-gray-700 hover:bg-gray-50 border-gray-300"
-            >
-              Clear
-            </Button>
+        <motion.div className="flex flex-col space-y-4 mt-6" variants={itemVariants}>
+          {isFaceModel && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Model Config (Optional)
+                </label>
+                <input
+                  type="file"
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-indigo-50 file:text-indigo-700
+                    hover:file:bg-indigo-100"
+                  onChange={(e) => setConfigFile(e.target.files?.[0] || null)}
+                  accept=".json,.yaml,.yml,.cfg,.config"
+                  disabled={isUploading}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Dataset (ZIP, Optional)
+                </label>
+                <input
+                  type="file"
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-indigo-50 file:text-indigo-700
+                    hover:file:bg-indigo-100"
+                  onChange={(e) => setDatasetFile(e.target.files?.[0] || null)}
+                  accept=".zip"
+                  disabled={isUploading}
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="threshold" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confidence Threshold: {threshold.toFixed(2)}
+                </label>
+                <input
+                  id="threshold"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={threshold}
+                  onChange={(e) => setThreshold(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  disabled={isUploading}
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>0.0</span>
+                  <span>0.5</span>
+                  <span>1.0</span>
+                </div>
+              </div>
+            </div>
           )}
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            disabled={!modelFile || isUploading}
-            className="w-full sm:w-auto"
-            icon={FaUpload}
-          >
-            {isUploading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Uploading...
-              </>
-            ) : 'Upload Model'}
-          </Button>
+          
+          <div className="flex justify-end space-x-3">
+            {modelFile && !isUploading && (
+              <Button
+                type="button"
+                onClick={() => {
+                  setModelFile(null);
+                  setModelName('');
+                  setModelDescription('');
+                  setFileError(null);
+                  setConfigFile(null);
+                  setDatasetFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                variant="outline"
+                size="md"
+                className="text-gray-700 hover:bg-gray-50 border-gray-300"
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              disabled={!modelFile || isUploading}
+              className="w-full sm:w-auto"
+              icon={isFaceModel ? FaArrowRight : FaUpload}
+            >
+              {isUploading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isFaceModel ? 'Evaluating...' : 'Uploading...'}
+                </>
+              ) : isFaceModel ? 'Evaluate Model' : 'Upload Model'}
+            </Button>
+          </div>
         </motion.div>
 
         <AnimatePresence>

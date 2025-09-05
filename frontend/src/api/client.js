@@ -23,7 +23,10 @@
 
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+// Use environment variable if available, otherwise default to localhost:8000
+const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8000';
+
+console.log('API Base URL:', API_BASE); // For debugging
 const DEFAULT_TIMEOUT = 120000; // ms
 
 /**
@@ -89,6 +92,34 @@ apiClient.interceptors.response.use(
  * } catch (error) {
  *   console.error('Evaluation failed:', error.message);
  * }
+ */
+/**
+ * Uploads a face recognition model for bias evaluation
+ * @async
+ * @param {FormData} formData - Form data containing the model file, config file, and optional dataset
+ * @param {number} [threshold=0.5] - Confidence threshold for face recognition
+ * @param {import('axios').AxiosRequestConfig['onUploadProgress']} [onUploadProgress] - Optional progress callback
+ * @returns {Promise<Object>} Response containing the evaluation results
+ * @throws {Object} Error object with status, data, and message properties
+ */
+export async function postFaceEvaluate(formData, threshold = 0.5, onUploadProgress) {
+  formData.append('threshold', threshold);
+  
+  const resp = await apiClient.post('/api/face/evaluate', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress,
+  });
+  
+  return resp.data;
+}
+
+/**
+ * Uploads a model file for loan approval evaluation
+ * @async
+ * @param {FormData} formData - Form data containing the model file and any additional parameters
+ * @param {import('axios').AxiosRequestConfig['onUploadProgress']} [onUploadProgress] - Optional progress callback
+ * @returns {Promise<import('axios').AxiosResponse<Blob>>} Response containing the evaluation results as a Blob
+ * @throws {Object} Error object with status, data, and message properties
  */
 export async function postEvaluate(formData, onUploadProgress) {
   const resp = await apiClient.post('/api/loan/evaluate', formData, {

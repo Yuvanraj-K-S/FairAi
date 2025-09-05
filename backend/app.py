@@ -360,6 +360,36 @@ def save_uploaded_file(file, target_dir):
 @app.route('/api/face/evaluate', methods=['POST'])
 @token_required
 def evaluate_face_model(current_user):
+    """
+    Evaluate a face recognition model for bias and robustness.
+    
+    Required files:
+    - model_file: The face recognition model file
+    - dataset_zip: ZIP file containing the dataset with directory structure:
+        dataset/
+        ├── group1/
+        │   ├── image1.jpg
+        │   └── image2.jpg
+        └── group2/
+            ├── image3.jpg
+            └── image4.jpg
+            
+    Optional files:
+    - config_file: Configuration file for the model
+    
+    Parameters:
+    - threshold: Similarity threshold (default: 0.5)
+    - augment: Comma-separated list of augmentations to apply (default: flip,rotation,brightness,blur)
+    
+    Returns:
+    {
+        'status': 'success'|'error',
+        'metrics': { ... },  # Evaluation metrics
+        'visualizations': { ... },  # Base64 encoded visualization images
+        'recommendations': [...],  # List of improvement suggestions
+        'used_augmentations': [...]  # List of augmentations applied
+    }
+    """
     try:
         # Create temporary directory for processing
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -370,114 +400,153 @@ def evaluate_face_model(current_user):
             model_file = request.files['model_file']
             config_file = request.files.get('config_file')
             
+            # Validate model file
+            if not model_file.filename:
+                return jsonify({"status": "error", "message": "No model file selected"}), 400
+                
             # Save files to temp directory
-            model_path = save_uploaded_file(model_file, temp_dir)
-            config_path = save_uploaded_file(config_file, temp_dir) if config_file else None
+            try:
+                model_path = save_uploaded_file(model_file, temp_dir)
+                config_path = save_uploaded_file(config_file, temp_dir) if config_file else None
+            except Exception as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Error saving uploaded files: {str(e)}"
+                }), 400
             
             try:
                 from bias.face_recognition_bias import FaceBiasEvaluator, ValidationError
             except ImportError as e:
                 return jsonify({
                     "status": "error",
-                    "message": f"Could not import face recognition module: {str(e)}"
+                    "message": f"Could not import face recognition module: {str(e)}",
+                    "traceback": traceback.format_exc()
                 }), 500
             
             try:
-                # Initialize and run the evaluator
+                # Get parameters from request with defaults
+                threshold = float(request.form.get('threshold', 0.5))
+                
+                # Parse augmentations
+                augment_str = request.form.get('augment', 'flip,rotation,brightness,blur')
+                augmentations = [a.strip() for a in augment_str.split(',') if a.strip()]
+                
+                # Handle dataset ZIP
+                if 'dataset_zip' not in request.files or not request.files['dataset_zip'].filename:
+                    return jsonify({
+                        "status": "error",
+                        "message": "Dataset ZIP file is required for face recognition evaluation"
+                    }), 400
+                
+                # Save and extract dataset
+                dataset_zip = request.files['dataset_zip']
+                dataset_path = os.path.join(temp_dir, 'dataset')
+                os.makedirs(dataset_path, exist_ok=True)
+                
+                try:
+                    zip_path = os.path.join(temp_dir, 'dataset.zip')
+                    dataset_zip.save(zip_path)
+                    shutil.unpack_archive(zip_path, dataset_path)
+                except Exception as e:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Failed to extract dataset: {str(e)}"
+                    }), 400
+                
+                # Initialize and run evaluator
                 evaluator = FaceBiasEvaluator(
                     model_path=model_path,
                     config_path=config_path,
-                    dataset_path=None  # We'll handle dataset separately
+                    dataset_path=dataset_path,
+                    threshold=threshold,
+                    augmentations=augmentations
                 )
-                
-                # Get parameters from request
-                threshold = float(request.form.get('threshold', 0.5))
-                evaluator.threshold = threshold
                 
                 # Run evaluation
                 output_dir = os.path.join(temp_dir, 'results')
                 os.makedirs(output_dir, exist_ok=True)
                 
-                # If dataset is provided, use it; otherwise create a sample
-                if 'dataset_zip' in request.files:
-                    dataset_zip = request.files['dataset_zip']
-                    dataset_path = os.path.join(temp_dir, 'dataset')
-                    os.makedirs(dataset_path, exist_ok=True)
-                    
-                    # Save and extract dataset
-                    zip_path = os.path.join(temp_dir, 'dataset.zip')
-                    dataset_zip.save(zip_path)
-                    shutil.unpack_archive(zip_path, dataset_path)
-                    
-                    # Update evaluator with dataset path
-                    evaluator.dataset_path = dataset_path
-                
-                # Run the evaluation
-                results = evaluator.run_evaluation(output_dir=output_dir)
+                try:
+                    results = evaluator.run_evaluation(output_dir=output_dir)
+                except Exception as e:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Evaluation failed: {str(e)}",
+                        "traceback": traceback.format_exc()
+                    }), 500
                 
                 # Prepare response data
                 response_data = {
                     'status': 'success',
                     'metrics': {},
                     'visualizations': {},
-                    'recommendations': []
+                    'recommendations': [],
+                    'used_augmentations': augmentations
                 }
                 
                 # Read metrics from results
                 metrics_path = os.path.join(output_dir, 'metrics.json')
                 if os.path.exists(metrics_path):
-                    with open(metrics_path, 'r') as f:
-                        response_data['metrics'] = json.load(f)
+                    try:
+                        with open(metrics_path, 'r') as f:
+                            response_data['metrics'] = json.load(f)
+                    except json.JSONDecodeError as e:
+                        app.logger.error(f"Failed to parse metrics: {str(e)}")
+                        response_data['metrics'] = {"error": "Failed to parse metrics file"}
                 
                 # Read recommendations if available
                 recs_path = os.path.join(output_dir, 'recommendations.txt')
                 if os.path.exists(recs_path):
-                    with open(recs_path, 'r') as f:
-                        response_data['recommendations'] = [line.strip() for line in f if line.strip()]
+                    try:
+                        with open(recs_path, 'r') as f:
+                            response_data['recommendations'] = [line.strip() for line in f if line.strip()]
+                    except Exception as e:
+                        app.logger.error(f"Failed to read recommendations: {str(e)}")
+                        response_data['recommendations'] = ["No specific recommendations available."]
                 
                 # Convert visualizations to base64
                 viz_dir = os.path.join(output_dir, 'visualizations')
                 if os.path.exists(viz_dir):
                     response_data['visualizations'] = {}
                     for viz_file in os.listdir(viz_dir):
-                        if viz_file.endswith(('.png', '.jpg', '.jpeg')):
-                            with open(os.path.join(viz_dir, viz_file), 'rb') as f:
-                                response_data['visualizations'][viz_file] = f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                        if viz_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                            try:
+                                with open(os.path.join(viz_dir, viz_file), 'rb') as f:
+                                    response_data['visualizations'][viz_file] = (
+                                        f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                                    )
+                            except Exception as e:
+                                app.logger.error(f"Failed to encode visualization {viz_file}: {str(e)}")
                 
                 return jsonify(response_data)
                 
             except ValidationError as e:
                 return jsonify({
                     "status": "error",
-                    "message": f"Validation error: {str(e)}"
+                    "message": f"Validation error: {str(e)}",
+                    "traceback": traceback.format_exc()
                 }), 400
-            except Exception as e:
-                return jsonify({
-                    "status": "error",
-                    "message": f"Error during face recognition evaluation: {str(e)}"
-                }), 500
                 
     except Exception as e:
+        app.logger.error(f"Unexpected error in evaluate_face_model: {str(e)}\n{traceback.format_exc()}")
         return jsonify({
             "status": "error",
-            "message": f"Unexpected error: {str(e)}",
-            "traceback": traceback.format_exc()
+            "message": f"An unexpected error occurred: {str(e)}",
+            "traceback": traceback.format_exc() if app.debug else None
         }), 500
 
-# Loan evaluation endpoint
 @app.route('/api/loan/evaluate', methods=['POST'])
 @token_required
 def evaluate_loan_model(current_user):
     try:
-        # Check if files are present in the request
-        if 'model_file' not in request.files or 'test_csv' not in request.files:
+        # Check if model file is present in the request
+        if 'model_file' not in request.files:
             return jsonify({
                 "status": "error",
-                "message": "Both model_file and test_csv are required"
+                "message": "Model file is required"
             }), 400
             
         model_file = request.files['model_file']
-        test_csv = request.files['test_csv']
         
         # Get parameters from form data
         params_str = request.form.get('params', '{}')
@@ -491,22 +560,70 @@ def evaluate_loan_model(current_user):
             
         # Create temporary directory for processing
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Save uploaded files
-            model_path = os.path.join(temp_dir, secure_filename(model_file.filename))
-            test_path = os.path.join(temp_dir, secure_filename(test_csv.filename))
-            
-            model_file.save(model_path)
-            test_csv.save(test_path)
-            
-            # Import the loan approval evaluator
             try:
-                from bias.loan_approval import MLFairnessEvaluator, ValidationError
-            except ImportError as e:
-                return jsonify({
-                    "status": "error",
-                    "message": f"Could not import loan approval module: {str(e)}"
-                }), 500
-            
+                # Save uploaded model file
+                model_path = os.path.join(temp_dir, secure_filename(model_file.filename))
+                model_file.save(model_path)
+                
+                # Use the default dataset
+                default_dataset = r"C:\Users\Prakash P\OneDrive\Desktop\FairAi\backend\dataset\loan_approval\loan_approval_dataset.csv"
+                if not os.path.exists(default_dataset):
+                    return jsonify({
+                        "status": "error",
+                        "message": "Default dataset not found"
+                    }), 500
+                    
+                # Create a filtered version of the dataset with only the selected parameters
+                import pandas as pd
+                
+                try:
+                    # Read the full dataset
+                    df = pd.read_csv(default_dataset)
+                    
+                    # Get the list of columns to keep (user parameters + target variable if it exists)
+                    target_column = params.get('target_column', 'Loan_Status')  # Default target column name
+                    columns_to_keep = params.get('features', [])  # User-selected features
+                    
+                    # Always include the target column if it's not already in the list
+                    if target_column and target_column not in columns_to_keep:
+                        columns_to_keep.append(target_column)
+                    
+                    # Filter the dataset to only include selected columns
+                    if columns_to_keep:
+                        # Ensure all requested columns exist in the dataset
+                        valid_columns = [col for col in columns_to_keep if col in df.columns]
+                        if not valid_columns:
+                            return jsonify({
+                                "status": "error",
+                                "message": "None of the specified features exist in the dataset"
+                            }), 400
+                        
+                        # Create filtered dataset
+                        filtered_df = df[valid_columns]
+                        
+                        # Save filtered dataset to a temporary file
+                        filtered_dataset_path = os.path.join(temp_dir, 'filtered_dataset.csv')
+                        filtered_df.to_csv(filtered_dataset_path, index=False)
+                        test_path = filtered_dataset_path
+                    else:
+                        # If no features specified, use the full dataset
+                        test_path = default_dataset
+                        
+                except Exception as e:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Error processing dataset: {str(e)}"
+                    }), 500
+                
+                # Import the loan approval evaluator
+                try:
+                    from bias.loan_approval import MLFairnessEvaluator, ValidationError
+                except ImportError as e:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Could not import loan approval module: {str(e)}"
+                    }), 500
+                
                 # Initialize and run the evaluator
                 evaluator = MLFairnessEvaluator(
                     model_path=model_path,
@@ -568,7 +685,8 @@ def evaluate_loan_model(current_user):
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Unexpected error: {str(e)}"
+            "message": f"Unexpected error: {str(e)}",
+            "traceback": traceback.format_exc()
         }), 500
 
 def init_app():
