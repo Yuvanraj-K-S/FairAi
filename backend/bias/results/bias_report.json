@@ -1,0 +1,46 @@
+{
+  "overall": {
+    "FMR": 0.0,
+    "FNMR": 0.011210762331838564,
+    "accuracy": 0.9887892376681614
+  },
+  "by_group": {
+    "Female": {
+      "FMR": 0.0,
+      "FNMR": 0.004484304932735426,
+      "accuracy": 0.9955156950672646
+    },
+    "Male": {
+      "FMR": 0.0,
+      "FNMR": 0.017937219730941704,
+      "accuracy": 0.9820627802690582
+    }
+  },
+  "by_augmentation": {
+    "blur": {
+      "FMR": 0.0,
+      "FNMR": 0.0,
+      "accuracy": 1.0
+    },
+    "brightness": {
+      "FMR": 0.0,
+      "FNMR": 0.053811659192825115,
+      "accuracy": 0.9461883408071748
+    },
+    "flip": {
+      "FMR": 0.0,
+      "FNMR": 0.0,
+      "accuracy": 1.0
+    },
+    "original": {
+      "FMR": 0.0,
+      "FNMR": 0.0,
+      "accuracy": 1.0
+    },
+    "rotation": {
+      "FMR": 0.0,
+      "FNMR": 0.002242152466367713,
+      "accuracy": 0.9977578475336323
+    }
+  }
+}
