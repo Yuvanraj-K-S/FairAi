@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiBarChart2, FiUser } from 'react-icons/fi';
+import { FiHome, FiFileText, FiUser } from 'react-icons/fi';
 
 function Navbar() {
   const location = useLocation();
@@ -9,7 +9,6 @@ function Navbar() {
     { path: '/', icon: <FiHome className="mr-2" />, label: 'Home' },
     { path: '/loan', icon: <FiFileText className="mr-2" />, label: 'Loan Approval Model' },
     { path: '/facial-upload', icon: <FiUser className="mr-2" />, label: 'Facial Recognition Model' },
-    { path: '/results', icon: <FiBarChart2 className="mr-2" />, label: 'Results' },
   ];
 
   return (

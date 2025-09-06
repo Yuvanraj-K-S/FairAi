@@ -3,7 +3,7 @@
  * @module api/client
  * @description
  * Provides a pre-configured Axios instance with:
- * - Base URL from VITE_API_BASE environment variable (default: http://localhost:8000)
+ * - Base URL from VITE_API_BASE environment variable (default: http://localhost:5000)
  * - Automatic JWT token injection from localStorage
  * - Standardized error handling
  * - Helper methods for file uploads and downloads
@@ -23,8 +23,8 @@
 
 import axios from 'axios';
 
-// Use environment variable if available, otherwise default to localhost:8000
-const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8000';
+// Use environment variable if available, otherwise default to localhost:5000
+const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:5000';
 
 console.log('API Base URL:', API_BASE); // For debugging
 const DEFAULT_TIMEOUT = 120000; // ms
@@ -45,7 +45,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('token');
       if (token) config.headers.Authorization = `Bearer ${token}`;
     } catch (e) {
       // ignore localStorage errors in some environments
@@ -118,16 +118,15 @@ export async function postFaceEvaluate(formData, threshold = 0.5, onUploadProgre
  * @async
  * @param {FormData} formData - Form data containing the model file and any additional parameters
  * @param {import('axios').AxiosRequestConfig['onUploadProgress']} [onUploadProgress] - Optional progress callback
- * @returns {Promise<import('axios').AxiosResponse<Blob>>} Response containing the evaluation results as a Blob
+ * @returns {Promise<Object>} Response containing the evaluation results
  * @throws {Object} Error object with status, data, and message properties
  */
 export async function postEvaluate(formData, onUploadProgress) {
   const resp = await apiClient.post('/api/loan/evaluate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    responseType: 'blob',
     onUploadProgress,
   });
-  return resp; // caller can access resp.data (Blob) and resp.headers
+  return resp.data; // Return the parsed JSON data directly
 }
 
 /**

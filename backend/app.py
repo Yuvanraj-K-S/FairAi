@@ -549,6 +549,15 @@ def evaluate_loan_model(current_user):
                 "message": "Invalid JSON in params field"
             }), 400
             
+        # Get threshold from request, default to 0.5 if not provided
+        try:
+            threshold = float(request.form.get('threshold', 0.5))
+        except ValueError:
+            return jsonify({
+                "status": "error",
+                "message": "Invalid threshold value. Must be a number."
+            }), 400
+
         # Create temporary directory for processing
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
@@ -615,11 +624,12 @@ def evaluate_loan_model(current_user):
                         "message": f"Could not import loan approval module: {str(e)}"
                     }), 500
                 
-                # Initialize and run the evaluator
+                # Initialize and run the evaluator with threshold
                 evaluator = MLFairnessEvaluator(
                     model_path=model_path,
                     data_path=test_path,
                     params=params,
+                    threshold=threshold,  # Add threshold parameter
                     output_dir=temp_dir
                 )
                 
