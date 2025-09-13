@@ -264,26 +264,35 @@ class ModelWrapper:
         return X
 
     def predict_proba(self, df: pd.DataFrame) -> np.ndarray:
+        """Get probability predictions from various model types.
+        
+        Handles:
+        - Standard scikit-learn models (with predict_proba or predict)
+        - Custom models with callable predict methods
+        - Dictionary-wrapped models
+        - Models with different output formats
+        - ONNX models
+        - PyTorch models
+        - TensorFlow models
+        """
         X = self._select_and_cast(df)
+        
         try:
-            if self.model_type == "sklearn":
-                if hasattr(self.model, "predict_proba"):
-                    probs = self.model.predict_proba(X)
-                    if probs.ndim == 1:
-                        # edge case
-                        return probs
-                    if probs.shape[1] >= 2:
-                        return probs[:, 1]
-                    return probs[:, -1]
-                elif hasattr(self.model, "predict"):
-                    # no probabilities available; fallback to predict (0/1)
-                    preds = np.asarray(self.model.predict(X))
-                    # return 0/1 probabilities
-                    return preds.astype(float)
+            model = self.model
+            
+            # Handle dictionary-wrapped models (common in some save formats)
+            if isinstance(model, dict):
+                if 'model' in model:
+                    model = model['model']
                 else:
-                    raise ModelLoadingError("Sklearn model has no predict_proba or predict method")
-
-            elif self.model_type == "onnx":
+                    # Try to find a model-like object in the dictionary
+                    for value in model.values():
+                        if hasattr(value, 'predict') or hasattr(value, 'predict_proba'):
+                            model = value
+                            break
+            
+            # Handle ONNX models
+            if self.model_type == "onnx":
                 input_name = self.model.get_inputs()[0].name
                 arr = X.astype(np.float32).to_numpy()
                 outputs = self.model.run(None, {input_name: arr})
@@ -294,7 +303,8 @@ class ModelWrapper:
                 if out.shape[1] >= 2:
                     return out[:, 1]
                 return out[:, -1]
-
+            
+            # Handle PyTorch models
             elif self.model_type == "pytorch":
                 if not TORCH_AVAILABLE:
                     raise ModelLoadingError("PyTorch not available")
@@ -306,7 +316,6 @@ class ModelWrapper:
                         return out_np
                     if out_np.shape[1] == 1:
                         # logits or probabilities single-output
-                        # assume logits -> apply sigmoid
                         try:
                             probs = 1 / (1 + np.exp(-out_np.ravel()))
                         except:
@@ -315,16 +324,46 @@ class ModelWrapper:
                     else:
                         # multi-class -> take probability of class 1
                         return out_np[:, 1]
-
+            
+            # Handle TensorFlow models
             elif self.model_type == "tensorflow":
                 out = self.model.predict(X.to_numpy(), verbose=0)
                 out = np.asarray(out)
                 if out.ndim == 1 or out.shape[1] == 1:
                     return out.ravel()
                 return out[:, 1]
-
+            
+            # Handle scikit-learn compatible models
+            elif hasattr(model, 'predict_proba'):
+                # Standard scikit-learn predict_proba
+                probs = model.predict_proba(X)
+                if probs.ndim == 1:
+                    return probs  # Already 1D array of probabilities
+                if probs.shape[1] >= 2:
+                    return probs[:, 1]  # Return probabilities of positive class
+                return probs  # Fallback for other cases
+                
+            elif hasattr(model, 'predict'):
+                # For models with only predict method (e.g., some regressors)
+                predictions = model.predict(X)
+                # If predictions are already probabilities (0-1)
+                if np.all((predictions >= 0) & (predictions <= 1)):
+                    return predictions
+                # Otherwise, treat as binary predictions and convert to probabilities
+                return (predictions > 0.5).astype(float)
+                
+            elif callable(model):
+                # Handle callable models (e.g., functions)
+                predictions = model(X)
+                if isinstance(predictions, (pd.Series, pd.DataFrame)):
+                    predictions = predictions.values
+                return np.asarray(predictions).flatten()
+                
             else:
-                raise ModelLoadingError(f"Prediction not implemented for {self.model_type}")
+                raise ModelLoadingError(
+                    "Model does not implement predict_proba() or predict() methods "
+                    f"and is not callable. Model type: {type(model).__name__}"
+                )
 
         except Exception as e:
             logger.exception("Prediction failed")
