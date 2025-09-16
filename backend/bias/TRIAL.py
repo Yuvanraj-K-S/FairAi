@@ -16,7 +16,7 @@ Face Recognition Model Bias Evaluation Pipeline (Augmentation-aware)
 - Computes metrics overall, per-group, and per-augmentation.
 
 Usage examples:
-    python face_bias_evaluator.py --model model.onnx --dataset "C:/Users/Prakash P/OneDrive/Desktop/FairAi/backend/dataset/facial_recognition"
+    python face_bias_evaluator.py --model model.onnx --dataset "C:/Users/Administrator/Desktop/IIT Madras/FairAi/backend/dataset/facial_recognition"
     python face_bias_evaluator.py --model model.pt --dataset ./faces --augment flip rotation brightness blur
 """
 

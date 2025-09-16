@@ -61,7 +61,7 @@ def save_uploaded_file(file, dest_dir):
 
 # Ensure your app config has DEFAULT_FACE_DATASET_PATH set, e.g.:
 # app.config['DEFAULT_FACE_DATASET_PATH'] = '/path/to/server/datasets/face_dataset'
-DEFAULT_SERVER_DATASET = app.config.get('DEFAULT_FACE_DATASET_PATH', r'C:\Users\Prakash P\OneDrive\Desktop\FairAi\backend\dataset\facial_recognition')
+DEFAULT_SERVER_DATASET = app.config.get('DEFAULT_FACE_DATASET_PATH', r'C:\\Users\\Administrator\\Desktop\\IIT Madras\\FairAi\\backend\\dataset\\facial_recognition')
 # Request logging
 @app.before_request
 def log_request_info():

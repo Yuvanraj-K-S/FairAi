@@ -237,42 +237,193 @@ const FacialUploadPage = () => {
         </div>
 
         {/* Results */}
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-8">
           {errorMsg && (
-            <div className="bg-red-100 text-red-800 border border-red-200 p-4 rounded mb-4">
-              <strong>Error:</strong> {errorMsg}
+            <div className="bg-red-100 text-red-800 border border-red-200 p-4 rounded-lg mb-6">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <strong>Error:</strong>
+              </div>
+              <p className="mt-1 text-sm">{errorMsg}</p>
             </div>
           )}
 
           {results && results.status === 'success' && (
-            <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-3">Evaluation Results</h2>
-
-              <div className="mb-4">
-                <h3 className="font-medium">Overall Metrics</h3>
-                <pre className="whitespace-pre-wrap text-sm bg-white p-3 rounded shadow-sm">{JSON.stringify(results.metrics.overall ?? results.metrics, null, 2)}</pre>
+            <div className="space-y-8">
+              {/* Status Card */}
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex flex-col items-center gap-6 md:flex-row">
+                  <div className="flex-shrink-0">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+                      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Face Recognition Evaluation Complete
+                    </h2>
+                    <p className="mt-1 text-gray-600">
+                      Your face recognition model has been evaluated successfully. Review the detailed metrics below.
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-800">
+                    EVALUATION COMPLETE
+                  </div>
+                </div>
               </div>
 
-              <div className="mb-4">
-                <h3 className="font-medium">By Group</h3>
-                <pre className="whitespace-pre-wrap text-sm bg-white p-3 rounded shadow-sm">{JSON.stringify(results.metrics.by_group, null, 2)}</pre>
+              {/* Overall Metrics */}
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                  <span className="border-b-2 border-blue-500 pb-2">Overall Performance</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium text-gray-500">Accuracy</p>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">
+                      {results.metrics.overall?.accuracy !== undefined 
+                        ? (results.metrics.overall.accuracy * 100).toFixed(2) + '%' 
+                        : 'N/A'}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">Overall model accuracy</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium text-gray-500">False Match Rate</p>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">
+                      {results.metrics.overall?.FMR !== undefined 
+                        ? (results.metrics.overall.FMR * 100).toFixed(2) + '%' 
+                        : 'N/A'}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">Lower is better</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium text-gray-500">False Non-Match Rate</p>
+                    <p className="mt-1 text-2xl font-semibold text-gray-900">
+                      {results.metrics.overall?.FNMR !== undefined 
+                        ? (results.metrics.overall.FNMR * 100).toFixed(2) + '%' 
+                        : 'N/A'}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">Lower is better</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="mb-4">
-                <h3 className="font-medium">By Augmentation</h3>
-                <pre className="whitespace-pre-wrap text-sm bg-white p-3 rounded shadow-sm">{JSON.stringify(results.metrics.by_augmentation, null, 2)}</pre>
-              </div>
+              {/* Group Metrics */}
+              {results.metrics.by_group && (
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                    <span className="border-b-2 border-blue-500 pb-2">Performance by Group</span>
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accuracy</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FMR</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FNMR</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {Object.entries(results.metrics.by_group).map(([group, metrics]) => (
+                          <tr key={group}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {group}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.accuracy * 100).toFixed(2)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.FMR * 100).toFixed(2)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.FNMR * 100).toFixed(2)}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
+              {/* Augmentation Metrics */}
+              {results.metrics.by_augmentation && (
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                    <span className="border-b-2 border-blue-500 pb-2">Performance by Augmentation</span>
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Augmentation</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accuracy</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FMR</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FNMR</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {Object.entries(results.metrics.by_augmentation).map(([augmentation, metrics]) => (
+                          <tr key={augmentation}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
+                              {augmentation}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.accuracy * 100).toFixed(2)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.FMR * 100).toFixed(2)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {(metrics.FNMR * 100).toFixed(2)}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Visualizations */}
               {results.visualizations && Object.keys(results.visualizations).length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-2">Visualizations</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(results.visualizations).map(([name, dataUrl]) => (
-                      <div key={name} className="border rounded p-2 bg-white">
-                        <img src={dataUrl} alt={name} className="w-full h-40 object-contain" />
-                        <div className="text-xs mt-1 text-gray-600">{name}</div>
-                      </div>
-                    ))}
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                    <span className="border-b-2 border-blue-500 pb-2">Visualizations</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {Object.entries(results.visualizations).map(([name, dataUrl]) => {
+                      const displayName = name
+                        .replace(/_/g, ' ')
+                        .replace(/\.(png|jpg|jpeg)$/i, '')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                      
+                      return (
+                        <div key={name} className="border rounded-lg overflow-hidden shadow-sm">
+                          <div className="p-3 bg-gray-50 border-b">
+                            <h4 className="text-sm font-medium text-gray-700">
+                              {displayName}
+                            </h4>
+                          </div>
+                          <div className="p-4">
+                            <img 
+                              src={dataUrl} 
+                              alt={displayName} 
+                              className="w-full h-64 object-contain mx-auto"
+                              onError={(e) => {
+                                console.error(`Failed to load image: ${name}`, e);
+                                e.target.alt = `Could not load visualization: ${name}`;
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -280,9 +431,22 @@ const FacialUploadPage = () => {
           )}
 
           {results && results.status === 'error' && (
-            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded mt-4">
-              <strong>Evaluation error:</strong> {results.message || 'Unknown error'}
-              {results.traceback && <pre className="text-xs mt-2">{results.traceback}</pre>}
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-yellow-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <strong>Evaluation Error</strong>
+              </div>
+              <p className="mt-1 text-sm">{results.message || 'An unknown error occurred during evaluation.'}</p>
+              {results.traceback && (
+                <details className="mt-2">
+                  <summary className="text-xs text-gray-500 cursor-pointer">Show details</summary>
+                  <pre className="mt-1 p-2 bg-gray-100 text-xs text-gray-700 rounded overflow-auto max-h-40">
+                    {results.traceback}
+                  </pre>
+                </details>
+              )}
             </div>
           )}
         </div>

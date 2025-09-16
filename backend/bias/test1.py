@@ -3,10 +3,10 @@
 from face_bias_evaluator import FaceBiasEvaluator
 
 if __name__ == "__main__":
-    # ✅ Point to your dataset path
-    dataset_path = r"C:\Users\Prakash P\OneDrive\Desktop\FairAi\backend\dataset\facial_recognition"
+    # Point to your dataset path
+    dataset_path = r"C:\Users\Administrator\Desktop\IIT Madras\FairAi\backend\dataset\facial_recognition"
 
-    # ✅ Initialize evaluator with default model (model_path=None → InceptionResnetV1)
+    # Initialize evaluator with default model (model_path=None → InceptionResnetV1)
     evaluator = FaceBiasEvaluator(
         model_path=None,           # <-- default facenet_pytorch model
         dataset_path=dataset_path,
