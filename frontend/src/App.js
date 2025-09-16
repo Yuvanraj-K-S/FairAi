@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import UploadModelPage from './pages/UploadModelPage';
 import LoanFormPage from './pages/LoanFormPage';
-import ResultsPage from './pages/ResultsPage';
+import ResultsPage from './pages/ResultsPage.jsx';
 import FacialUploadPage from './pages/FacialUploadPage';
 import MainLayout from './components/layout/MainLayout';
 import Auth from './components/Auth/Auth';

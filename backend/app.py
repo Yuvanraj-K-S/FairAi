@@ -17,6 +17,7 @@ from bson import json_util
 import traceback
 import sys
 import time
+import base64
 
 # Import debug utilities
 from debug_utils import (
@@ -562,6 +563,12 @@ def evaluate_loan_model(current_user):
         params_str = request.form.get('params', '{}')
         try:
             params = json.loads(params_str)
+            
+            # Add default sensitive_attribute if not provided
+            if 'sensitive_attribute' not in params:
+                print("No sensitive_attribute provided in params, defaulting to 'Gender'")
+                params['sensitive_attribute'] = 'Gender'  # Default to 'Gender' if not specified
+                
         except json.JSONDecodeError:
             return jsonify({
                 "status": "error",
@@ -686,17 +693,51 @@ def evaluate_loan_model(current_user):
                         "python_path": sys.path
                     }), 500
                 
+                # Log the parameters being passed to the evaluator
+                print("\n=== Evaluation Parameters ===")
+                print(f"Model path: {model_path}")
+                print(f"Data path: {test_path}")
+                print(f"Threshold: {threshold}")
+                print(f"Output directory: {temp_dir}")
+                print("Params:", json.dumps(params, indent=2))
+                
                 # Initialize and run the evaluator with threshold
-                evaluator = MLFairnessEvaluator(
-                    model_path=model_path,
-                    data_path=test_path,
-                    params=params,
-                    threshold=threshold,  # Add threshold parameter
-                    output_dir=temp_dir
-                )
+                try:
+                    evaluator = MLFairnessEvaluator(
+                        model_path=model_path,
+                        data_path=test_path,
+                        params=params,
+                        threshold=threshold,  # Add threshold parameter
+                        output_dir=temp_dir
+                    )
+                    print("MLFairnessEvaluator initialized successfully")
+                except Exception as e:
+                    print(f"Error initializing MLFairnessEvaluator: {str(e)}")
+                    print(f"Traceback: {traceback.format_exc()}")
+                    raise
                 
                 # Run the evaluation
-                results = evaluator.run_evaluation()
+                print("\n=== Starting model evaluation ===")
+                try:
+                    results = evaluator.run_evaluation()
+                    print("Evaluation completed successfully")
+                    print(f"Results: {results}")
+                except Exception as e:
+                    print(f"Error during evaluator.run_evaluation(): {str(e)}")
+                    print(f"Traceback: {traceback.format_exc()}")
+                    raise
+                
+                # Verify temp directory contents
+                print("\n=== Checking temp directory contents ===")
+                temp_contents = os.listdir(temp_dir)
+                print(f"Files in temp directory: {temp_contents}")
+                
+                # Check if visualizations directory exists
+                viz_dir = os.path.join(temp_dir, 'visualizations')
+                if os.path.exists(viz_dir):
+                    print(f"Visualizations directory contents: {os.listdir(viz_dir)}")
+                else:
+                    print("Visualizations directory not found")
                 
                 # Prepare response data
                 response_data = {
@@ -706,25 +747,61 @@ def evaluate_loan_model(current_user):
                     'recommendations': []
                 }
                 
-                # Read metrics from results
-                metrics_path = os.path.join(temp_dir, 'metrics.json')
+                # Read metrics from results - using summary.json instead of metrics.json
+                metrics_path = os.path.join(temp_dir, 'summary.json')
+                print(f"\n=== Looking for metrics at: {metrics_path} ===")
                 if os.path.exists(metrics_path):
-                    with open(metrics_path, 'r') as f:
-                        response_data['metrics'] = json.load(f)
+                    print("Found summary file")
+                    try:
+                        with open(metrics_path, 'r') as f:
+                            metrics_content = f.read()
+                            print(f"Summary file content: {metrics_content}")
+                            summary_data = json.loads(metrics_content)
+                            # Extract metrics from the summary data
+                            response_data['metrics'] = {
+                                'overall': summary_data.get('overall', {}),
+                                'fairness_metrics': summary_data.get('fairness_metrics', {})
+                            }
+                    except Exception as e:
+                        print(f"Error reading summary file: {str(e)}")
+                        response_data['metrics'] = {"error": f"Failed to parse summary: {str(e)}"}
+                else:
+                    print("Summary file not found")
                 
                 # Read recommendations
                 recs_path = os.path.join(temp_dir, 'recommendations.txt')
+                print(f"\n=== Looking for recommendations at: {recs_path} ===")
                 if os.path.exists(recs_path):
-                    with open(recs_path, 'r') as f:
-                        response_data['recommendations'] = [line.strip() for line in f if line.strip()]
+                    print("Found recommendations file")
+                    try:
+                        with open(recs_path, 'r') as f:
+                            recommendations = [line.strip() for line in f if line.strip()]
+                            print(f"Recommendations: {recommendations}")
+                            response_data['recommendations'] = recommendations
+                    except Exception as e:
+                        print(f"Error reading recommendations: {str(e)}")
+                else:
+                    print("Recommendations file not found")
                 
-                # Convert visualizations to base64
-                viz_dir = os.path.join(temp_dir, 'visualizations')
-                if os.path.exists(viz_dir):
-                    for viz_file in os.listdir(viz_dir):
-                        if viz_file.endswith(('.png', '.jpg', '.jpeg')):
-                            with open(os.path.join(viz_dir, viz_file), 'rb') as f:
-                                response_data['visualizations'][viz_file] = f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                # Convert visualizations to base64 - looking in 'plots' directory instead of 'visualizations'
+                print("\n=== Processing visualizations ===")
+                plots_dir = os.path.join(temp_dir, 'plots')
+                if os.path.exists(plots_dir):
+                    plot_files = [f for f in os.listdir(plots_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+                    print(f"Found {len(plot_files)} plot files in {plots_dir}")
+                    
+                    for plot_file in plot_files:
+                        try:
+                            plot_path = os.path.join(plots_dir, plot_file)
+                            print(f"Processing plot: {plot_path}")
+                            with open(plot_path, 'rb') as f:
+                                response_data['visualizations'][plot_file] = f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                            print(f"Successfully processed {plot_file}")
+                        except Exception as e:
+                            print(f"Error processing {plot_file}: {str(e)}")
+                else:
+                    print(f"Plots directory not found at: {plots_dir}")
+                    print(f"Available files in temp directory: {os.listdir(temp_dir)}")
                 
                 # Include predictions if available
                 preds_path = os.path.join(temp_dir, 'predictions.csv')

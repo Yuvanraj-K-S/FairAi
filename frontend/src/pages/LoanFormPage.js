@@ -87,6 +87,14 @@ function LoanFormPage() {
       console.log('Evaluation results:', results);
       setEvaluationResults(results);
       setIsUploaded(true);
+      
+      // Navigate to results page with the evaluation results
+      navigate('/results', { 
+        state: { 
+          evaluationResults: results,
+          from: location.pathname 
+        } 
+      });
     } catch (error) {
       console.error('Upload error:', error);
       let errorMessage = 'Error uploading and evaluating model';
