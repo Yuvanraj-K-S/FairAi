@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
 const Auth = () => {
@@ -13,6 +13,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, signup } = useAuth();
 
   const { name, email, password } = formData;
 
@@ -29,21 +31,30 @@ const Auth = () => {
     setError('');
 
     try {
-      const url = `http://localhost:5000/api/auth/${isLogin ? 'login' : 'signup'}`;
-      const payload = isLogin ? { email, password } : { name, email, password };
-      
-      const response = await axios.post(url, payload);
-      
-      if (response.data.status === 'success') {
-        // Save token to localStorage
-        localStorage.setItem('token', response.data.token);
-        // Save user data to context or state management
-        // For now, just redirect to home
-        navigate('/');
+      if (isLogin) {
+        // Handle login
+        const result = await login(email, password);
+        if (result.success) {
+          console.log('Login successful, redirecting...');
+          // Redirect to the intended page or home
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
+        } else {
+          setError(result.error || 'Login failed. Please try again.');
+        }
+      } else {
+        // Handle signup
+        const result = await signup(name, email, password);
+        if (result.success) {
+          console.log('Signup successful, redirecting...');
+          navigate('/', { replace: true });
+        } else {
+          setError(result.error || 'Signup failed. Please try again.');
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
       console.error('Auth error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

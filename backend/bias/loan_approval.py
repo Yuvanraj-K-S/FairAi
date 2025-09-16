@@ -42,17 +42,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Optional deps flags (set to True only if import succeeds)
-SKLEARN_AVAILABLE = False
-JOBLIB_AVAILABLE = False
-PICKLE_AVAILABLE = True  # builtin
-ONNX_AVAILABLE = False
-TORCH_AVAILABLE = False
-TF_AVAILABLE = False
-MATPLOTLIB_AVAILABLE = True  # we imported matplotlib above
-
 try:
     import joblib
     JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
+    logger.warning("joblib not available. .joblib files will not be supported unless joblib is installed.")
 except Exception:
     logger.info("joblib not available; will fallback to pickle for .pkl files when allowed")
 

@@ -278,7 +278,7 @@ function LoanFormPage() {
                   <div className="text-sm">
                     <div>
                       <p>Drag and drop your model file here, or click to browse</p>
-                      <p className="text-xs text-gray-500 mt-1">Supported formats: .h5, .pt, .pkl, .onnx (max 100MB)</p>
+                      <p className="text-xs text-gray-500 mt-1">Supported formats: .h5, .pt, .pkl, .onnx, .joblib (max 100MB)</p>
                     </div>
                   </div>
                   
@@ -301,7 +301,7 @@ function LoanFormPage() {
                       type="file"
                       className="hidden"
                       onChange={handleFileChange}
-                      accept=".h5,.pt,.pkl,.onnx"
+                      accept=".h5,.pt,.pkl,.onnx,.joblib"
                     />
                   </label>
                   

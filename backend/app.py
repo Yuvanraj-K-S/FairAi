@@ -295,20 +295,35 @@ def login():
             "message": str(e)
         }), 500
 
-# Protected route example
+# Get current user data endpoint
 @app.route('/api/auth/me', methods=['GET'])
 @token_required
 def get_current_user(current_user):
     try:
-        # Remove password before sending user data
-        current_user.pop('password', None)
-        current_user['_id'] = str(current_user['_id'])
+        db = get_db()
+        if db is None:
+            return jsonify({"status": "error", "message": "Database connection failed"}), 500
+            
+        # Get the latest user data from the database
+        user = db.users.find_one({"email": current_user['email']})
+        if not user:
+            return jsonify({"status": "error", "message": "User not found"}), 404
+            
+        # Remove sensitive data before sending user info
+        user_data = {
+            'id': str(user['_id']),
+            'name': user.get('name', ''),
+            'email': user.get('email', ''),
+            'created_at': user.get('created_at', '')
+        }
         
         return jsonify({
             "status": "success",
-            "user": parse_json(current_user)
+            "user": user_data
         })
+        
     except Exception as e:
+        print(f"Error in get_current_user: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -529,6 +544,10 @@ def evaluate_face_model(current_user):
 @app.route('/api/loan/evaluate', methods=['POST'])
 @token_required
 def evaluate_loan_model(current_user):
+    print("\n=== Starting loan evaluation ===")
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Script directory: {os.path.dirname(os.path.abspath(__file__))}")
+    
     try:
         # Check if model file is present in the request
         if 'model_file' not in request.files:
@@ -565,12 +584,36 @@ def evaluate_loan_model(current_user):
                 model_path = os.path.join(temp_dir, secure_filename(model_file.filename))
                 model_file.save(model_path)
                 
-                # Use the default dataset
-                default_dataset = r"C:\Users\Prakash P\OneDrive\Desktop\FairAi\backend\dataset\loan_approval\loan_approval_dataset.csv"
+                # Use the default dataset with relative path (updated to point to the correct location)
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                default_dataset = os.path.join(script_dir, 'dataset', 'loan_approval', 'loan_approval_dataset.csv')
+                default_dataset = os.path.normpath(default_dataset)  # Normalize the path
+                print(f"Looking for dataset at: {default_dataset}")
+                
+                # Log the path for debugging
+                print(f"Looking for dataset at: {default_dataset}")
+                
                 if not os.path.exists(default_dataset):
+                    # Check if directory exists
+                    dataset_dir = os.path.dirname(default_dataset)
+                    if not os.path.exists(dataset_dir):
+                        print(f"Dataset directory not found: {dataset_dir}")
+                    else:
+                        # Directory exists but file doesn't, list directory contents
+                        try:
+                            files = os.listdir(dataset_dir)
+                            print(f"Directory exists but file not found. Directory contents: {files}")
+                        except Exception as e:
+                            print(f"Error listing directory contents: {str(e)}")
+                    
                     return jsonify({
                         "status": "error",
-                        "message": "Default dataset not found"
+                        "message": f"Default dataset not found at: {default_dataset}",
+                        "details": {
+                            "resolved_path": default_dataset,
+                            "current_working_directory": os.getcwd(),
+                            "script_directory": os.path.dirname(os.path.abspath(__file__))
+                        }
                     }), 500
                     
                 # Create a filtered version of the dataset with only the selected parameters
@@ -617,11 +660,30 @@ def evaluate_loan_model(current_user):
                 
                 # Import the loan approval evaluator
                 try:
+                    print("\n=== Before importing loan_approval module ===")
+                    print(f"Python path: {sys.path}")
+                    print(f"Current directory contents: {os.listdir('.')}")
+                    
+                    # Try to list the bias directory to check its contents
+                    try:
+                        bias_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bias')
+                        print(f"Bias directory exists: {os.path.exists(bias_dir)}")
+                        if os.path.exists(bias_dir):
+                            print(f"Bias directory contents: {os.listdir(bias_dir)}")
+                    except Exception as dir_err:
+                        print(f"Error checking bias directory: {str(dir_err)}")
+                    
                     from bias.loan_approval import MLFairnessEvaluator, ValidationError
+                    print("Successfully imported MLFairnessEvaluator and ValidationError")
                 except ImportError as e:
+                    import traceback
+                    print(f"Error importing loan_approval module: {str(e)}")
+                    print(f"Full traceback: {traceback.format_exc()}")
                     return jsonify({
                         "status": "error",
-                        "message": f"Could not import loan approval module: {str(e)}"
+                        "message": f"Could not import loan approval module: {str(e)}",
+                        "traceback": traceback.format_exc(),
+                        "python_path": sys.path
                     }), 500
                 
                 # Initialize and run the evaluator with threshold
