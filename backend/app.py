@@ -201,14 +201,19 @@ def signup():
             if db.users.find_one({"email": email}):
                 return jsonify({"status": "error", "message": "Email already registered"}), 400
             
-            # Hash password
-            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            # Hash password with consistent encoding
+            salt = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            
+            if DEBUG:
+                print(f"Generated salt: {salt}")
+                print(f"Hashed password: {hashed}")
             
             # Create user
             user = {
                 "name": name,
                 "email": email,
-                "password": hashed.decode('utf-8'),
+                "password": hashed,  # Store as bytes
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
@@ -267,11 +272,33 @@ def login():
         # Find user
         user = db.users.find_one({"email": email})
         if not user:
+            if DEBUG:
+                print(f"User not found with email: {email}")
             return jsonify({"status": "error", "message": "Invalid email or password"}), 401
             
+        if DEBUG:
+            print(f"User found: {user['email']}")
+            print(f"Stored password hash: {user['password']}")
+            print(f"Password type: {type(user['password'])}")
+            
         # Verify password
-        if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+        try:
+            # Ensure the stored password is in bytes
+            stored_password = user['password']
+            if isinstance(stored_password, str):
+                stored_password = stored_password.encode('utf-8')
+                
+            if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
+                if DEBUG:
+                    print("Password verification failed")
+                return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+                
+            if DEBUG:
+                print("Password verification successful")
+        except Exception as e:
+            if DEBUG:
+                print(f"Error during password verification: {str(e)}")
+            return jsonify({"status": "error", "message": "Error during authentication"}), 500
             
         # Generate JWT token
         token = jwt.encode({
