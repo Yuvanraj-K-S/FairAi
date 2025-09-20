@@ -1,61 +1,168 @@
+/* ===== Results Page Styles ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .results-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding:20px;
-    font-family: 'Arial', sans-serif;
-    color:#333;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-md);
+  font-family: var(--font-sans);
+  color: var(--gray-800);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.results-header {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
 }
 
 .results-container h2 {
-    text-align: center;
-    color: #2c3e50;
-    margin-bottom: 20px;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: var(--space-sm);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
 }
 
-.results-container p {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 16px;
+.results-container .subtitle {
+  font-size: 1.1rem;
+  color: var(--gray-600);
+  max-width: 700px;
+  margin: 0 auto var(--space-xl);
+  line-height: 1.6;
 }
 
 .decision-card {
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 40px;
-    border-left: 6px solid #2ecc71;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  margin-bottom: var(--space-2xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.decision-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--success), #34d399);
+}
+
+.decision-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-xl);
 }
 
 .decision-card h3 {
-    color: #27ae60;
-    margin-top: 0;
+  color: var(--success);
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.decision-card h3::before {
+  content: '✓';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.9em;
+  line-height: 1;
+  padding-bottom: 2px;
 }
 
 .decision-card p {
-    font-size: 18px;
-    margin: 10px 0;
+  font-size: 1.1rem;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--gray-700);
+  line-height: 1.6;
 }
 
 .decision-card ul {
-    list-style-type: disc;
-    margin-top: 20px;
-    padding-left: 20px;
+  list-style: none;
+  margin: var(--space-lg) 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
-.decision-card ul li{
-    margin-bottom: 5px;
-    font-size: 16px;
-}    
+
+.decision-card ul li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: 1rem;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.decision-card ul li::before {
+  content: '•';
+  color: var(--success);
+  font-size: 1.5em;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+/* Charts Section */
 .charts-section {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  margin-top: var(--space-2xl);
 }
-@media(min-width: 768px){
-    .charts-section{
-        flex-direction: row;
-    }
-    .charts-wrapper{
-        flex: 1;
-    }
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+  .charts-section {
+    flex-direction: row;
+  }
+  
+  .charts-wrapper {
+    flex: 1;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .decision-card {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .decision-card h3,
+  .decision-card p,
+  .decision-card ul li {
+    color: var(--gray-200);
+  }
+  
+  .decision-card::before {
+    background: linear-gradient(to bottom, #10b981, #059669);
+  }
 }

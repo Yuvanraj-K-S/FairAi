@@ -29,7 +29,7 @@ function LoanFormPage() {
   const [evaluationResults, setEvaluationResults] = useState(null);
   const [error, setError] = useState('');
   const fileInputRef = React.useRef(null);
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,7 +53,7 @@ function LoanFormPage() {
     setError('');
     setEvaluationResults(null);
     
-    if (!user) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } });
       return;
     }
@@ -88,8 +88,8 @@ function LoanFormPage() {
       setEvaluationResults(results);
       setIsUploaded(true);
       
-      // Navigate to results page with the evaluation results
-      navigate('/results', { 
+      // Navigate to loan results page with the evaluation results
+      navigate('/results/loan', { 
         state: { 
           evaluationResults: results,
           from: location.pathname 
@@ -138,7 +138,7 @@ function LoanFormPage() {
             Loan Approval Model
           </h1>
           <p className="text-gray-600">
-            {user ? `Welcome, ${user.name}!` : 'Please log in to upload and evaluate models'}
+            {currentUser ? `Welcome, ${currentUser.name}!` : 'Please log in to upload and evaluate models'}
           </p>
         </div>
 

@@ -530,15 +530,22 @@ def evaluate_face_model(current_user):
                     "traceback": traceback.format_exc()
                 }), 500
 
-            # Build response
+            # Build response with proper structure
             response_data = {
                 'status': 'success',
-                'metrics': metrics,
+                'metrics': {
+                    'accuracy': metrics.get('accuracy', 0.0),
+                    'bias': metrics.get('bias', 0.0),
+                    'detailed_metrics': metrics.get('detailed_metrics', {})
+                },
                 'visualizations': {},
                 'recommendations': [],
                 'used_augmentations': augmentations,
                 'model_used': ('default' if use_default_model or (model is not None and model_path is None) else 'custom')
             }
+            
+            # Log the response data for debugging
+            app.logger.info(f"Sending response data: {json.dumps(response_data, indent=2, default=str)}")
 
             # recommendations file (optional)
             recs_path = os.path.join(output_dir, 'recommendations.txt')

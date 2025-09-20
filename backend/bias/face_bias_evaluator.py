@@ -275,35 +275,85 @@ class FaceBiasEvaluator:
     def run_evaluation(self, output_dir="results"):
         self.setup()
         results = ResultsGenerator()
-
-        for group in os.listdir(self.dataset_path):
+        
+        # Check if dataset path exists and has subdirectories
+        if not os.path.exists(self.dataset_path):
+            raise ValueError(f"Dataset path does not exist: {self.dataset_path}")
+            
+        groups = [d for d in os.listdir(self.dataset_path) 
+                 if os.path.isdir(os.path.join(self.dataset_path, d))]
+        
+        if not groups:
+            raise ValueError(f"No group directories found in dataset path: {self.dataset_path}")
+            
+        logger.info(f"Found {len(groups)} groups in dataset: {', '.join(groups)}")
+        
+        processed_images = 0
+        
+        for group in groups:
             group_dir = os.path.join(self.dataset_path, group)
-            if not os.path.isdir(group_dir):
-                continue
-
-            for fname in os.listdir(group_dir):
-                if not any(fname.lower().endswith(ext) for ext in self.exts):
-                    continue
-
+            image_files = [f for f in os.listdir(group_dir) 
+                          if any(f.lower().endswith(ext) for ext in self.exts)]
+            
+            logger.info(f"Processing {len(image_files)} images in group: {group}")
+            
+            for fname in image_files:
                 img_path = os.path.join(group_dir, fname)
                 img = cv2.imread(img_path)
                 if img is None:
+                    logger.warning(f"Could not read image: {img_path}")
                     continue
 
-                orig_emb = self.extractor.get_embedding(img)
+                try:
+                    orig_emb = self.extractor.get_embedding(img)
+                    if orig_emb is None or np.all(orig_emb == 0):
+                        logger.warning(f"Failed to extract embedding for: {img_path}")
+                        continue
 
-                for aug in ["original"] + self.augmentations:
-                    aug_img = apply_augmentation(img, aug)
-                    aug_emb = self.extractor.get_embedding(aug_img)
-                    sim = cosine_similarity([orig_emb], [aug_emb])[0][0]
+                    for aug in ["original"] + self.augmentations:
+                        aug_img = apply_augmentation(img, aug)
+                        aug_emb = self.extractor.get_embedding(aug_img)
+                        
+                        if aug_emb is None or np.all(aug_emb == 0):
+                            logger.warning(f"Failed to extract embedding for augmented image: {img_path} ({aug})")
+                            continue
+                            
+                        sim = cosine_similarity([orig_emb], [aug_emb])[0][0]
+                        results.add(group, aug, 1, sim, self.threshold)
+                        
+                    processed_images += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {img_path}: {str(e)}")
+                    continue
+        
+        logger.info(f"Processed {processed_images} images with {len(self.augmentations)} augmentations each")
+        
+        if processed_images == 0:
+            raise ValueError("No valid images were processed. Check dataset and model compatibility.")
 
-                    results.add(group, aug, 1, sim, self.threshold)
-
+        # Compute metrics
         report = results.compute_metrics()
+        
+        # Add overall accuracy and bias metrics
+        overall_accuracy = report.get('overall', {}).get('accuracy', 0.0)
+        overall_bias = abs(report.get('by_group', {}).get('male', {}).get('FMR', 0.0) - 
+                          report.get('by_group', {}).get('female', {}).get('FMR', 0.0))
+        
+        metrics = {
+            'accuracy': float(overall_accuracy),
+            'bias': float(overall_bias),
+            'detailed_metrics': report
+        }
+        
+        # Save full report
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, "bias_report.json"), "w") as f:
-            json.dump(report, f, indent=2)
-        return report
+            json.dump(metrics, f, indent=2)
+            
+        logger.info(f"Evaluation complete. Accuracy: {overall_accuracy:.4f}, Bias: {overall_bias:.4f}")
+        
+        return metrics
 
 # -----------------------
 # CLI Runner

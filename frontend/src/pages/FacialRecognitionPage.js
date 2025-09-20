@@ -7,7 +7,7 @@ import {
   FiX,
   FiChevronRight,
 } from "react-icons/fi";
-import axios from "axios";
+import apiClient from "../api/client";
 
 const FacialRecognitionPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -41,11 +41,13 @@ const FacialRecognitionPage = () => {
       // If your backend expects dataset_zip or other fields, append them here
 
       // Use multipart/form-data automatically
-      await axios.post("/api/face/evaluate", formData, {
+      const response = await apiClient.post("/api/face/evaluate", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       setIsUploaded(true);
+      // Navigate to the new facial recognition results page with the evaluation data
+      navigate("/results/facial-recognition", { state: { evaluationData: response.data } });
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Upload failed. Please try again.");
@@ -65,11 +67,13 @@ const FacialRecognitionPage = () => {
       formData.append("use_default", "true");
       // If backend requires dataset_zip, add here or backend will use its default dataset
 
-      await axios.post("/api/face/evaluate", formData, {
+      const response = await apiClient.post("/api/face/evaluate", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       setIsUploaded(true);
+      // Navigate to the new facial recognition results page with the evaluation data
+      navigate("/results/facial-recognition", { state: { evaluationData: response.data } });
     } catch (error) {
       console.error("Default model evaluation failed:", error);
       alert("Failed to run default model. Please try again.");
@@ -138,10 +142,11 @@ const FacialRecognitionPage = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate("/results")}
+                    onClick={() => navigate("/results/facial-recognition")}
                     className="px-4 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={isUploading}
                   >
-                    View Results
+                    {isUploading ? 'Processing...' : 'View Results'}
                     <FiChevronRight className="ml-2 -mr-1 h-4 w-4" />
                   </button>
                 </div>
