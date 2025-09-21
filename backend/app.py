@@ -59,9 +59,9 @@ def save_uploaded_file(file, dest_dir):
     file.save(file_path)
     return file_path
 
-# Ensure your app config has DEFAULT_FACE_DATASET_PATH set, e.g.:
-# app.config['DEFAULT_FACE_DATASET_PATH'] = '/path/to/server/datasets/face_dataset'
-DEFAULT_SERVER_DATASET = app.config.get('DEFAULT_FACE_DATASET_PATH', r'C:\\Users\\Administrator\\Desktop\\IIT Madras\\FairAi\\backend\\dataset\\facial_recognition')
+# Instead of hardcoded path, use environment variable with relative fallback
+DEFAULT_SERVER_DATASET = app.config.get('DEFAULT_FACE_DATASET_PATH', 
+                                       os.path.join(os.path.dirname(__file__), 'dataset', 'facial_recognition'))
 # Request logging
 @app.before_request
 def log_request_info():
@@ -625,9 +625,9 @@ def evaluate_loan_model(current_user):
                 model_path = os.path.join(temp_dir, secure_filename(model_file.filename))
                 model_file.save(model_path)
                 
-                # Use the default dataset with relative path (updated to point to the correct location)
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                default_dataset = os.path.join(script_dir, 'dataset', 'loan_approval', 'loan_approval_dataset.csv')
+                # Use the default dataset with environment variable fallback
+                default_dataset = os.getenv('DEFAULT_LOAN_DATASET_PATH', 
+                                           os.path.join(os.path.dirname(__file__), 'dataset', 'loan_approval', 'loan_approval_dataset.csv'))
                 default_dataset = os.path.normpath(default_dataset)  # Normalize the path
                 print(f"Looking for dataset at: {default_dataset}")
                 

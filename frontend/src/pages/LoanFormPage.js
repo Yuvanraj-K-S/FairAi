@@ -131,45 +131,48 @@ function LoanFormPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-2">
-            Loan Approval Model
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Loan Model{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+              Evaluation
+            </span>
           </h1>
-          <p className="text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             {currentUser ? `Welcome, ${currentUser.name}!` : 'Please log in to upload and evaluate models'}
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-red-500 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-            <h2 className="block text-sm font-medium text-gray-900 mb-2">Model Configuration</h2>
+        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <h2 className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Model Configuration</h2>
           </div>
           
           <div className="px-6 py-8 space-y-6">
             {/* Parameters Section */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Features to Include
                 </label>
-                <div className="space-y-2 max-h-60 overflow-y-auto p-4 border rounded-md">
+                <div className="space-y-2 max-h-60 overflow-y-auto p-4 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {AVAILABLE_FEATURES.map((feature) => (
                       <div key={feature} className="flex items-center">
@@ -186,7 +189,7 @@ function LoanFormPage() {
                           }}
                           className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                         />
-                        <label htmlFor={`feature-${feature}`} className="ml-2 block text-sm text-gray-700">
+                        <label htmlFor={`feature-${feature}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                           {feature}
                         </label>
                       </div>
@@ -215,9 +218,9 @@ function LoanFormPage() {
                 </button>
 
                 {showAdvanced && (
-                  <div className="mt-2 p-4 bg-gray-50 rounded-md space-y-4">
+                  <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-md space-y-4">
                     <div>
-                      <label htmlFor="test-size" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="test-size" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Test Size
                       </label>
                       <input
@@ -228,11 +231,11 @@ function LoanFormPage() {
                         step="0.05"
                         value={params.test_size}
                         onChange={(e) => setParams({...params, test_size: parseFloat(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-600 text-gray-900 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label htmlFor="random-state" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="random-state" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Random State
                       </label>
                       <input
@@ -241,7 +244,7 @@ function LoanFormPage() {
                         min="0"
                         value={params.random_state}
                         onChange={(e) => setParams({...params, random_state: parseInt(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-600 text-gray-900 dark:text-white"
                       />
                     </div>
                   </div>
@@ -251,14 +254,14 @@ function LoanFormPage() {
 
             {/* File Upload Section */}
             <div>
-              <h3 className="block text-sm font-medium text-gray-700 mb-2">Model File <span className="text-red-500">*</span></h3>
+              <h3 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Model File <span className="text-red-500">*</span></h3>
               {isUploaded ? (
                 <div className="text-center py-8">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                    <FiCheckCircle className="h-8 w-8 text-green-600" />
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/50 mb-4">
+                    <FiCheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">Model Uploaded</h3>
-                  <p className="mt-2 text-sm text-gray-500 mb-6">
+                  <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">Model Uploaded</h3>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
                     Your loan approval model has been successfully uploaded and is being processed.
                   </p>
                   <button
@@ -269,7 +272,7 @@ function LoanFormPage() {
                   </button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed rounded-lg p-8 text-center transition-colors border-gray-300 hover:border-blue-500">
+                <div className="border-2 border-dashed rounded-lg p-8 text-center transition-colors border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 bg-white dark:bg-slate-700">
                   <svg 
                     className="mx-auto h-12 w-12 text-blue-400 mb-4" 
                     stroke="currentColor" 
@@ -285,8 +288,8 @@ function LoanFormPage() {
                   
                   <div className="text-sm">
                     <div>
-                      <p>Drag and drop your model file here, or click to browse</p>
-                      <p className="text-xs text-gray-500 mt-1">Supported formats: .h5, .pt, .pkl, .onnx, .joblib (max 100MB)</p>
+                      <p className="text-gray-900 dark:text-white">Drag and drop your model file here, or click to browse</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Supported formats: .h5, .pt, .pkl, .onnx, .joblib (max 100MB)</p>
                     </div>
                   </div>
                   
@@ -314,16 +317,16 @@ function LoanFormPage() {
                   </label>
                   
                   {fileName && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                    <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                       <div className="flex items-center">
                         <FiFile className="flex-shrink-0 h-5 w-5 text-blue-400" />
-                        <span className="ml-2 text-sm font-medium text-gray-900 truncate">
+                        <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white truncate">
                           {fileName}
                         </span>
                         <button
                           type="button"
                           onClick={resetForm}
-                          className="ml-auto flex-shrink-0 text-gray-400 hover:text-gray-500 focus:outline-none"
+                          className="ml-auto flex-shrink-0 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none"
                         >
                           <FiX className="h-5 w-5" />
                         </button>
@@ -395,66 +398,66 @@ function LoanFormPage() {
 
       {/* Results Section */}
       {evaluationResults && (
-        <div className="mt-10 bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Evaluation Results</h3>
+        <div className="mt-10 bg-white dark:bg-slate-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Evaluation Results</h3>
           </div>
           <div className="px-6 py-5">
             <div className="space-y-6">
               {/* Metrics Section */}
               <div className="border-b border-gray-200 pb-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-3">Model Performance</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Model Performance</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-xs text-gray-500">Accuracy</p>
-                    <p className="text-lg font-medium text-gray-900">0.85</p>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Accuracy</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">0.85</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-xs text-gray-500">Precision</p>
-                    <p className="text-lg font-medium text-gray-900">0.82</p>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Precision</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">0.82</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-xs text-gray-500">Recall</p>
-                    <p className="text-lg font-medium text-gray-900">0.78</p>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Recall</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">0.78</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded border">
-                    <p className="text-xs text-gray-500">F1-Score</p>
-                    <p className="text-lg font-medium text-gray-900">0.80</p>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">F1-Score</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">0.80</p>
                   </div>
                 </div>
               </div>
 
               {/* Recommendations Section */}
               <div className="border-b border-gray-200 pb-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Recommendations</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Recommendations</h4>
                 <ul className="space-y-2">
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm text-gray-700">Consider collecting more diverse training data to reduce bias</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Consider collecting more diverse training data to reduce bias</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm text-gray-700">Review the model's performance across different demographic groups</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Review the model's performance across different demographic groups</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm text-gray-700">Implement fairness constraints in the model training process</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Implement fairness constraints in the model training process</span>
                   </li>
                 </ul>
               </div>
 
               {/* Visualizations Section */}
               <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-3">Visualizations</h4>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Visualizations</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white border rounded-lg p-4 shadow-sm">
-                    <h5 className="text-xs font-medium text-gray-700 mb-2">Fairness Metrics</h5>
+                  <div className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Fairness Metrics</h5>
                     <div className="h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded flex items-center justify-center">
                       <div className="text-center px-4">
                         <svg className="mx-auto h-10 w-10 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -464,8 +467,8 @@ function LoanFormPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white border rounded-lg p-4 shadow-sm">
-                    <h5 className="text-xs font-medium text-gray-700 mb-2">Bias Analysis</h5>
+                  <div className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Bias Analysis</h5>
                     <div className="h-48 bg-gradient-to-br from-purple-50 to-purple-100 rounded flex items-center justify-center">
                       <div className="text-center px-4">
                         <svg className="mx-auto h-10 w-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

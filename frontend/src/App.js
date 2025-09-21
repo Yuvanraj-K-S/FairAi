@@ -15,7 +15,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Auth from './components/Auth/Auth';
 import HomePage from './pages/HomePage';
 import LoanFormPage from './pages/LoanFormPage';
-import FacialUploadPage from './pages/FacialRecognitionPage';
+import FacialUploadPage from './pages/FacialUploadPage';
 import LoanResultsPage from './pages/LoanResultsPage';
 import FacialRecognitionResultsPage from './pages/FacialRecognitionResultsPage';
 import UploadModelPage from './pages/UploadModelPage';
@@ -73,16 +73,16 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
       <Toaster 
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
-            color: 'var(--gray-800)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: theme === 'dark' ? '#f1f5f9' : '#1f2937',
+            border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
             boxShadow: 'var(--shadow-lg)',
             borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.25rem',
@@ -136,13 +136,13 @@ function AppContent() {
               <nav className="hidden md:flex space-x-6 mr-8">
                 <Link 
                   to="/loan" 
-                  className={`nav-link ${location.pathname === '/loan' ? 'text-primary-600 font-medium' : 'text-gray-700 hover:text-primary-600'}`}
+                  className={`nav-link ${location.pathname === '/loan' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'}`}
                 >
                   Loan Model
                 </Link>
                 <Link 
                   to="/facial-upload" 
-                  className={`nav-link ${location.pathname === '/facial-upload' ? 'text-primary-600 font-medium' : 'text-gray-700 hover:text-primary-600'}`}
+                  className={`nav-link ${location.pathname === '/facial-upload' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400'}`}
                 >
                   Facial Recognition
                 </Link>
@@ -159,7 +159,7 @@ function AppContent() {
               {theme === 'dark' ? (
                 <FiSun className="w-5 h-5 text-yellow-400" />
               ) : (
-                <FiMoon className="w-5 h-5 text-gray-700" />
+                <FiMoon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               )}
             </button>
             
@@ -167,19 +167,19 @@ function AppContent() {
               {currentUser ? (
                 <button 
                   onClick={handleLogout} 
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
                 >
                   <FiLogOut className="w-5 h-5" />
                   <span>Logout</span>
                 </button>
               ) : (
                 <div className="flex space-x-4">
-                  <Link to="/login" className="nav-link hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
+                  <Link to="/login" className="nav-link hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors text-gray-700 dark:text-gray-300">
                     Login
                   </Link>
                   <Link 
                     to="/signup" 
-                    className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-lg"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-lg"
                   >
                     Sign Up
                   </Link>

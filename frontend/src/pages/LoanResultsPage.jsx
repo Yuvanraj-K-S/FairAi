@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 function LoanResultsPage() {
@@ -79,25 +79,28 @@ function LoanResultsPage() {
   const assessment = status === 'success' ? 'PASS' : 'FAIL';
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-2">
-            Loan Model Evaluation Results
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Loan Model{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+              Evaluation Results
+            </span>
           </h1>
-          <p className="text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             Detailed analysis of your loan approval model's performance
           </p>
         </div>
 
         {/* Status Card */}
-        <div className="mb-8 rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="mb-8 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 shadow-sm">
           <div className="flex flex-col items-center gap-6 p-6 md:flex-row">
             <div className="flex-shrink-0">
               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${
                 assessment === 'PASS' || assessment === 'pass' 
-                  ? 'bg-green-100 text-green-600' 
-                  : 'bg-red-100 text-red-600'
+                  ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' 
+                  : 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'
               }`}>
                 {assessment === 'PASS' || assessment === 'pass' ? (
                   <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,55 +114,55 @@ function LoanResultsPage() {
               </div>
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {assessment === 'PASS' || assessment === 'pass' 
                   ? 'Model Evaluation Complete' 
                   : 'Model Evaluation Issues Found'}
               </h2>
-              <p className="mt-1 text-gray-600">
+              <p className="mt-1 text-gray-600 dark:text-gray-300">
                 {assessment === 'PASS' || assessment === 'pass'
                   ? 'Your loan model has been evaluated successfully. Review the detailed metrics below.'
                   : 'There are some issues with your loan model that need attention.'}
               </p>
             </div>
-            <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-800">
+            <div className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
               {assessment === 'PASS' || assessment === 'pass' ? 'PASSED' : 'ISSUES FOUND'}
             </div>
           </div>
         </div>
 
         {/* Overall Metrics */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
             <span className="border-b-2 border-blue-500 pb-2">Loan Model Performance</span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="text-sm font-medium text-gray-500">Total Records</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{totalRecords}</p>
-              <p className="mt-1 text-xs text-gray-500">Total number of loan records evaluated</p>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Records</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{totalRecords}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Total number of loan records evaluated</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="text-sm font-medium text-gray-500">Approval Rate</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{formattedApprovalRate}</p>
-              <p className="mt-1 text-xs text-gray-500">Overall loan approval rate</p>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Approval Rate</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{formattedApprovalRate}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Overall loan approval rate</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="text-sm font-medium text-gray-500">Accuracy</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{formattedAccuracy}</p>
-              <p className="mt-1 text-xs text-gray-500">Model prediction accuracy</p>
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Accuracy</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{formattedAccuracy}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Model prediction accuracy</p>
             </div>
           </div>
         </div>
 
         {/* Fairness Metrics */}
         {fairness_metrics && Object.keys(fairness_metrics).length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
               <span className="border-b-2 border-blue-500 pb-2">Fairness Metrics</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
                   <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -167,47 +170,47 @@ function LoanResultsPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Demographic Parity</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Demographic Parity</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatMetric(fairness_metrics.demographic_parity_difference)}
                     </p>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Difference in approval rates between groups</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Difference in approval rates between groups</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
-                  <div className="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                  <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 mr-3">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Equal Opportunity</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Equal Opportunity</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatMetric(fairness_metrics.equal_opportunity_difference)}
                     </p>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Difference in true positive rates between groups</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Difference in true positive rates between groups</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
-                  <div className="p-2 rounded-full bg-green-100 text-green-600 mr-3">
+                  <div className="p-2 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 mr-3">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Disparate Impact</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Disparate Impact</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatMetric(fairness_metrics.disparate_impact)}
                     </p>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Ratio of approval rates between groups</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ratio of approval rates between groups</p>
               </div>
             </div>
           </div>
@@ -215,8 +218,8 @@ function LoanResultsPage() {
 
         {/* Visualizations */}
         {visualizations && Object.keys(visualizations).length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
               <span className="border-b-2 border-blue-500 pb-2">Performance Visualizations</span>
             </h3>
             <div className="grid grid-cols-1 gap-6">
@@ -232,9 +235,9 @@ function LoanResultsPage() {
                   .replace(/\b\w/g, l => l.toUpperCase());
                 
                 return (
-                  <div key={title} className="border rounded-lg overflow-hidden shadow-sm">
-                    <div className="p-4 bg-gray-50 border-b">
-                      <h4 className="text-base font-medium text-gray-700">
+                  <div key={title} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                      <h4 className="text-base font-medium text-gray-700 dark:text-gray-300">
                         {displayTitle}
                       </h4>
                     </div>
@@ -258,19 +261,21 @@ function LoanResultsPage() {
 
         {/* Recommendations */}
         {recommendations && recommendations.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-6 pb-2 border-b border-gray-200">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-8">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
               <span className="border-b-2 border-blue-500 pb-2">Recommendations</span>
             </h3>
             <ul className="space-y-4">
               {recommendations.map((rec, index) => (
                 <li key={index} className="flex items-start">
-                  <div className="flex-shrink-0 h-5 w-5 text-blue-500 mt-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3 mt-0.5">
+                    <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="ml-3 text-gray-700">{rec}</span>
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg flex-1 border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{rec}</p>
+                  </div>
                 </li>
               ))}
             </ul>
